@@ -1,0 +1,80 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 中文（设计包原文）。 -->
+<resources>
+    <string name="app_name">折纸向导</string>
+
+    <string name="loading">准备中…</string>
+
+    <string name="welcome_title">准备一张折纸</string>
+    <string name="welcome_paper">15 × 15 cm 折纸</string>
+    <string name="welcome_table">一张桌子</string>
+    <string name="welcome_body">桌上会出现一张演示纸，它折一步，你跟着折一步</string>
+    <string name="welcome_go">好，选一个折</string>
+
+    <string name="library_title">折什么</string>
+    <string name="library_first">先学看图 ·</string>
+    <string name="library_meta">%1$d 步 · %2$d 分钟</string>
+
+    <string name="finding_title">低头看看桌面</string>
+    <string name="finding_body">找到桌面就会自动继续</string>
+
+    <string name="place_title">看着你纸旁边的桌面，捏一下放演示纸</string>
+    <string name="place_body">演示纸和你的纸一样大（15 cm），左边右边都行</string>
+    <string name="pose_colour_down">彩色面朝下</string>
+
+    <string name="step_count">%1$d / %2$d</string>
+    <string name="step_first_diamond">拿一张新纸，像演示纸一样摆成菱形，彩色面朝下</string>
+    <string name="step_first_square">拿一张新纸，像演示纸一样摆正，彩色面朝下</string>
+    <string name="legend_valley">- - 谷折：往前折</string>
+    <string name="legend_mountain">— · 山折：往后折</string>
+    <string name="step_form_hint">拿起纸照着做；可以捏住演示纸转一转</string>
+    <string name="step_draw_hint">演示纸上的白点就是位置</string>
+    <string name="step_controller">放下手柄，用手折 · 摇杆左右转动演示纸</string>
+
+    <string name="action_next">下一步</string>
+    <string name="action_flipped">翻好了</string>
+    <string name="action_done">折好了</string>
+    <string name="action_back_step">上一步</string>
+    <string name="action_replay">重播</string>
+    <string name="action_more">更多</string>
+    <string name="action_back">返回</string>
+    <string name="action_settings">设置</string>
+    <string name="action_cancel">取消</string>
+    <string name="action_again">再折一个</string>
+    <string name="action_library">回作品库</string>
+    <string name="action_resume">接着折</string>
+    <string name="action_rescan">再找找</string>
+    <string name="action_allow">授权</string>
+    <string name="action_system_settings">去系统设置</string>
+    <string name="action_clear">清空</string>
+
+    <string name="done_title">%s折好了！</string>
+    <string name="done_body">放在桌上看看吧</string>
+
+    <string name="resume_title">上次折到 %1$s · 第 %2$d 步</string>
+    <string name="resume_body">把你的纸放回桌上，再放一次演示纸</string>
+
+    <string name="nodesk_title">找不到桌面</string>
+    <string name="nodesk_body">开灯、靠近桌子、慢慢低头看一圈</string>
+
+    <string name="perm_title">需要空间权限</string>
+    <string name="perm_body">才能把演示纸放到你的桌上</string>
+
+    <string name="menu_move">换个位置放演示纸</string>
+    <string name="menu_restart">从头折</string>
+    <string name="menu_settings">设置</string>
+    <string name="menu_home">回作品库</string>
+
+    <string name="settings_title">设置</string>
+    <string name="settings_language">语言</string>
+    <string name="lang_system">跟随系统</string>
+    <string name="lang_zh">中文</string>
+    <string name="lang_en">English</string>
+    <string name="settings_hand">惯用手</string>
+    <string name="hand_right">右手</string>
+    <string name="hand_left">左手</string>
+    <string name="settings_dwell">注视翻页（看着「下一步」1 秒）</string>
+    <string name="settings_clear">清空记录</string>
+    <string name="settings_about_body">v%s · 小贴士：彩色面朝下、跟演示纸摆成一样</string>
+    <string name="confirm_clear">清空折过的记录？</string>
+</resources>
