@@ -111,27 +111,31 @@ internal class SharedResources {
 /** Scene-lifetime materials, one per appearance (design `palette`). Unlit, tone mapping off: exact colours. */
 internal class SceneMaterials(private val shared: SharedResources) {
     /** The demo sheet's two faces: one-sided each, so a facet's top and bottom carry different colours. */
-    val rose: Material = unlit(FoldColors.KamiRose, culling = MaterialCullingMode.BACK)
+    val rose: Material = unlit(FoldColors.MistPink, culling = MaterialCullingMode.BACK)
     val paper: Material = unlit(FoldColors.PaperBack, culling = MaterialCullingMode.BACK)
 
-    /** Fold line: white core over a graphite halo. */
+    /** Fold line: white core over an ink halo. */
     val foldWhite: Material = unlit(FoldColors.FoldWhite)
-    val graphite: Material = unlit(FoldColors.GraphiteHalo)
+    val graphite: Material = unlit(FoldColors.InkHalo)
 
-    /** The moving flap (22 %), its edge and the arrows (amber). */
-    val amberTint: Material = sheer(FoldColors.FlapAmber, 0.22f)
-    val amber: Material = unlit(FoldColors.FlapAmber)
+    /** The moving flap (28 %), its edge and the arrows (mist blue). */
+    val amberTint: Material = sheer(FoldColors.FlapBlue, 0.28f)
+    val amber: Material = unlit(FoldColors.FlapBlue)
 
     /** Landings. */
-    val jade: Material = unlit(FoldColors.LandingJade)
+    val jade: Material = unlit(FoldColors.LandingMint)
 
     /** Earlier creases: white 30 %. */
     val crease: Material = sheer(FoldColors.FoldWhite, 0.30f)
 
-    /** Reticle: rose 25 % fill, amber dashes; "cannot place": coral. */
-    val roseGhost: Material = sheer(FoldColors.KamiRose, 0.25f, depthTest = false)
-    val amberDash: Material = sheer(FoldColors.FlapAmber, 0.9f, depthTest = false)
-    val coral: Material = sheer(FoldColors.Coral, 0.95f, depthTest = false)
+    /** Reticle: mist pink 30 % fill, blue dashes; "cannot place": coral. */
+    val roseGhost: Material = sheer(FoldColors.MistPink, 0.30f, depthTest = false)
+    val amberDash: Material = sheer(FoldColors.FlapBlue, 0.9f, depthTest = false)
+    val coral: Material = sheer(FoldColors.CrossCoral, 0.95f, depthTest = false)
+
+    /** The virtual desk top under the sheet when no desk was found (D7): deep cream, 85 %, with a faint ink rim. */
+    val virtualDesk: Material = sheer(FoldColors.DeskCream, 0.85f)
+    val virtualDeskEdge: Material = sheer(FoldColors.InkHalo, 0.25f)
 
     private fun unlit(color: Color, culling: MaterialCullingMode = MaterialCullingMode.NONE): UnlitMaterial =
         shared.keep(

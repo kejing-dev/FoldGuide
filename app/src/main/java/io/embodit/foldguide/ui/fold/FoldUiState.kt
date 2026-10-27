@@ -1,7 +1,9 @@
 package io.embodit.foldguide.ui.fold
 
+import io.embodit.foldguide.domain.fold.Category
 import io.embodit.foldguide.domain.fold.FoldLibrary
 import io.embodit.foldguide.domain.fold.FoldModel
+import io.embodit.foldguide.domain.fold.Paper
 import io.embodit.foldguide.domain.fold.Step
 import io.embodit.foldguide.domain.fold.StepKind
 import io.embodit.foldguide.domain.model.BlockReason
@@ -24,14 +26,22 @@ enum class Mode {
     RESUME, // S14
     NO_DESK, // S15
     NO_PERMISSION, // S17
+    PAPER, // S19 (v0.1.1): which paper do you have
 }
 
-/** Where the demo sheet lies: its centre on the desk and its yaw (the "away" axis = yaw applied to -Z). */
-data class DemoPose(val center: Vec3, val yaw: Float)
+/**
+ * Where the demo sheet lies: its centre on the desk and its yaw (the "away" axis = yaw applied to -Z).
+ * [virtual]: no desk was found in time, the sheet lies on a virtual desk top in front of the user (factory rule D7).
+ */
+data class DemoPose(val center: Vec3, val yaw: Float, val virtual: Boolean = false)
 
 data class FoldUiState(
     val mode: Mode = Mode.LOADING,
-    val modelIndex: Int = 1,
+    val modelId: String = "dog",
+    /** The paper of the model being folded (the settings' paper when it was picked; the resumed fold's paper). */
+    val paper: Paper = Paper.SQUARE,
+    /** The library shelf shown. */
+    val category: Category = Category.BASICS,
     val step: Int = 0,
     val demo: DemoPose? = null,
     /** Bumped on every step entry and replay: the scene restarts the demo, the dwell timer resets. */
@@ -56,7 +66,7 @@ data class FoldUiState(
     val hold: Boolean = false,
 ) {
     val model: FoldModel
-        get() = FoldLibrary.all[modelIndex.coerceIn(0, FoldLibrary.all.size - 1)]
+        get() = FoldLibrary.model(modelId, paper) ?: FoldLibrary.model("basics", paper)!!
 
     val currentStep: Step
         get() = model.steps[step.coerceIn(0, model.steps.size - 1)]
@@ -87,6 +97,7 @@ data class FoldUiState(
                         Mode.RESUME -> "S14"
                         Mode.NO_DESK -> "S15"
                         Mode.NO_PERMISSION -> "S17"
+                        Mode.PAPER -> "S19"
                     }
             }
 
@@ -112,7 +123,7 @@ sealed class FoldEvent {
     data class PlanesChanged(val deskCount: Int) : FoldEvent()
 
     /** A pinch on a desk plane while placing: the demo centre and the yaw towards the user. */
-    data class DemoPlaceRequested(val center: Vec3, val yaw: Float, val force: Boolean = false) : FoldEvent()
+    data class DemoPlaceRequested(val center: Vec3, val yaw: Float, val force: Boolean = false, val virtual: Boolean = false) : FoldEvent()
 
     data class DemoPlayed(val serial: Int) : FoldEvent()
 
@@ -126,7 +137,16 @@ sealed class FoldEvent {
     // panels
     data object WelcomeDone : FoldEvent()
 
-    data class ModelPicked(val index: Int) : FoldEvent()
+    data class ModelPicked(val id: String) : FoldEvent()
+
+    data class PaperPicked(val paper: Paper) : FoldEvent()
+
+    data object PaperChipClicked : FoldEvent()
+
+    data class CategoryPicked(val category: Category) : FoldEvent()
+
+    /** "Put it in front of me": the demo sheet goes on a virtual desk top ahead, no desk needed (D7, B17). */
+    data object PlaceInFrontClicked : FoldEvent()
 
     data object SettingsClicked : FoldEvent()
 
@@ -184,6 +204,8 @@ sealed class FoldEvent {
 
     data class DebugModel(val id: String) : FoldEvent()
 
+    data class DebugPaper(val paper: Paper) : FoldEvent()
+
     data class DebugStep(val step: Int) : FoldEvent()
 
     data class DebugGhost(val share: Float?) : FoldEvent()
@@ -199,6 +221,9 @@ sealed class FoldEvent {
 sealed class FoldUiEffect {
     /** Debug: put the demo sheet on the nearest table at a fixed pose. */
     data object SeedDemo : FoldUiEffect()
+
+    /** Put the demo sheet on a virtual desk top in front of the user (no desk found, or asked for). */
+    data object PlaceVirtual : FoldUiEffect()
 
     data object RestartSensing : FoldUiEffect()
 

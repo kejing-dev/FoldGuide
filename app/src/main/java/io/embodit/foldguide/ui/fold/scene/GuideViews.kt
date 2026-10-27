@@ -46,14 +46,19 @@ internal class GuideViews(private val parent: Entity, private val materials: Sce
         group?.setOpacity(value)
     }
 
+    /** Turns the guides with the sheet (rotate steps). */
+    fun setTurn(angle: Float) {
+        group?.setLocal(rotation = io.embodit.foldguide.domain.model.Quat4.axisAngle(io.embodit.foldguide.domain.model.Vec3.UP, angle))
+    }
+
     suspend fun build(sheet: Sheet, step: Step, topY: Float) {
         clear()
         val g = Entity().named("guides")
         parent.addChild(g)
         group = g
         val y = topY + 0.0004f
-        if (step.turns) {
-            // the moving flap: tint + edge
+        if (step.marks) {
+            // the moving flap (a cut: the strip that goes): tint + edge
             val tint = MeshBuilder()
             val edge = MeshBuilder()
             for (f in FoldEngine.movingParts(sheet, step)) {
@@ -64,15 +69,17 @@ internal class GuideViews(private val parent: Entity, private val materials: Sce
             add(g, tint, materials.amberTint, "flapTint")
             add(g, edge, materials.amber, "flapEdge")
             yield()
-            // arrows: from the pick to its mirror image, arched 28 % of the chord up into the air
-            val arrows = MeshBuilder()
-            step.lines.forEachIndexed { i, line ->
-                val from = step.pickAt(i)
-                val to = Geometry.reflect(from, line.a, line.b)
-                arrow(arrows, from, to, y + 0.0006f)
+            // arrows: from the pick to its mirror image, arched 28 % of the chord up into the air (none for a cut)
+            if (step.turns) {
+                val arrows = MeshBuilder()
+                step.lines.forEachIndexed { i, line ->
+                    val from = step.pickAt(i)
+                    val to = Geometry.reflect(from, line.a, line.b)
+                    arrow(arrows, from, to, y + 0.0006f)
+                }
+                add(g, arrows, materials.amber, "arrows")
+                yield()
             }
-            add(g, arrows, materials.amber, "arrows")
-            yield()
             // fold lines: halo under the core
             val halo = MeshBuilder()
             val core = MeshBuilder()

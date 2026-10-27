@@ -19,13 +19,18 @@ import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.pico.spatial.ui.design.PicoTheme
+import io.embodit.foldguide.domain.fold.StartPose
 import io.embodit.foldguide.ui.theme.FoldColors
 
-/** The paper in its start pose (square / diamond), as a small pictogram (design `spatialUiMap.paperDiagram`). */
+/**
+ * The paper in its start pose (square / diamond / printer paper upright, [ratio] = long / short side),
+ * as a small pictogram (design `spatialUiMap.paperDiagram`).
+ */
 @Composable
-internal fun PoseDiagram(diamond: Boolean, size: Dp = 72.dp) {
-    val fill = FoldColors.PaperBack.copy(alpha = 0.9f)
-    val edge = Color.White.copy(alpha = 0.6f)
+internal fun PoseDiagram(pose: StartPose, size: Dp = 72.dp, ratio: Float = 1.414f, colour: Boolean = false) {
+    val diamond = pose == StartPose.DIAMOND
+    val fill = FoldColors.PaperBack
+    val edge = FoldColors.InkHalo.copy(alpha = 0.5f)
     Canvas(modifier = Modifier.size(size)) {
         val c = Offset(this.size.width / 2f, this.size.height / 2f)
         val r = this.size.minDimension * 0.36f
@@ -35,6 +40,13 @@ internal fun PoseDiagram(diamond: Boolean, size: Dp = 72.dp) {
             path.lineTo(c.x + r, c.y)
             path.lineTo(c.x, c.y + r)
             path.lineTo(c.x - r, c.y)
+        } else if (pose == StartPose.RECT) {
+            val hh = r * 1.1f
+            val hw = hh / ratio
+            path.moveTo(c.x - hw, c.y - hh)
+            path.lineTo(c.x + hw, c.y - hh)
+            path.lineTo(c.x + hw, c.y + hh)
+            path.lineTo(c.x - hw, c.y + hh)
         } else {
             val s = r * 0.8f
             path.moveTo(c.x - s, c.y - s)
@@ -43,7 +55,7 @@ internal fun PoseDiagram(diamond: Boolean, size: Dp = 72.dp) {
             path.lineTo(c.x - s, c.y + s)
         }
         path.close()
-        drawPath(path, fill)
+        drawPath(path, if (colour) FoldColors.MistPink else fill)
         drawPath(path, edge, style = Stroke(width = 2f))
     }
 }
@@ -54,28 +66,29 @@ internal fun FlipDiagram(size: Dp = 72.dp) {
     Canvas(modifier = Modifier.size(size)) {
         val w = this.size.width
         val h = this.size.height
-        drawRect(FoldColors.PaperBack.copy(alpha = 0.9f), topLeft = Offset(w * 0.14f, h * 0.3f), size = Size(w * 0.3f, h * 0.44f))
-        drawRect(FoldColors.KamiRose, topLeft = Offset(w * 0.56f, h * 0.3f), size = Size(w * 0.3f, h * 0.44f))
+        drawRect(FoldColors.PaperBack, topLeft = Offset(w * 0.14f, h * 0.3f), size = Size(w * 0.3f, h * 0.44f))
+        drawRect(FoldColors.InkHalo.copy(alpha = 0.5f), topLeft = Offset(w * 0.14f, h * 0.3f), size = Size(w * 0.3f, h * 0.44f), style = Stroke(width = 2f))
+        drawRect(FoldColors.MistPink, topLeft = Offset(w * 0.56f, h * 0.3f), size = Size(w * 0.3f, h * 0.44f))
         val p = Path()
         p.moveTo(w * 0.3f, h * 0.22f)
         p.quadraticBezierTo(w * 0.5f, h * 0.02f, w * 0.7f, h * 0.22f)
-        drawPath(p, Color.White, style = Stroke(width = 3f, cap = StrokeCap.Round))
-        drawLine(Color.White, Offset(w * 0.7f, h * 0.22f), Offset(w * 0.6f, h * 0.2f), strokeWidth = 3f, cap = StrokeCap.Round)
-        drawLine(Color.White, Offset(w * 0.7f, h * 0.22f), Offset(w * 0.66f, h * 0.1f), strokeWidth = 3f, cap = StrokeCap.Round)
+        drawPath(p, FoldColors.FlapBlue, style = Stroke(width = 3f, cap = StrokeCap.Round))
+        drawLine(FoldColors.FlapBlue, Offset(w * 0.7f, h * 0.22f), Offset(w * 0.6f, h * 0.2f), strokeWidth = 3f, cap = StrokeCap.Round)
+        drawLine(FoldColors.FlapBlue, Offset(w * 0.7f, h * 0.22f), Offset(w * 0.66f, h * 0.1f), strokeWidth = 3f, cap = StrokeCap.Round)
     }
 }
 
-/** The done mark: a jade ring with a check. */
+/** The done mark: a mint ring with a check. */
 @Composable
 internal fun DoneMark(size: Dp = 56.dp) {
     Canvas(modifier = Modifier.size(size)) {
         val w = this.size.width
-        drawCircle(FoldColors.LandingJade, radius = w * 0.44f, style = Stroke(width = w * 0.07f))
+        drawCircle(FoldColors.LandingMint, radius = w * 0.44f, style = Stroke(width = w * 0.07f))
         val p = Path()
         p.moveTo(w * 0.3f, w * 0.52f)
         p.lineTo(w * 0.44f, w * 0.66f)
         p.lineTo(w * 0.72f, w * 0.36f)
-        drawPath(p, FoldColors.LandingJade, style = Stroke(width = w * 0.08f, cap = StrokeCap.Round))
+        drawPath(p, FoldColors.LandingMint, style = Stroke(width = w * 0.08f, cap = StrokeCap.Round))
     }
 }
 
@@ -102,7 +115,7 @@ internal fun StepDots(count: Int, index: Int, modifier: Modifier = Modifier) {
 @Composable
 internal fun DwellRing(enabledSetting: Boolean, content: @Composable () -> Unit) {
     val progress = DwellTarget.progress.floatValue
-    val track = Color.White.copy(alpha = 0.12f)
+    val track = FoldColors.InkHalo.copy(alpha = 0.14f)
     DisposableEffect(Unit) { onDispose { DwellTarget.bounds = null } }
     Box(
         modifier =
@@ -122,7 +135,7 @@ internal fun DwellRing(enabledSetting: Boolean, content: @Composable () -> Unit)
                 val inset = stroke / 2f
                 val arcSize = Size(size.width - stroke, size.height - stroke)
                 drawArc(track, 0f, 360f, false, topLeft = Offset(inset, inset), size = arcSize, style = Stroke(stroke))
-                if (progress > 0f) drawArc(Color.White, -90f, 360f * progress, false, topLeft = Offset(inset, inset), size = arcSize, style = Stroke(stroke, cap = StrokeCap.Round))
+                if (progress > 0f) drawArc(FoldColors.FlapBlue, -90f, 360f * progress, false, topLeft = Offset(inset, inset), size = arcSize, style = Stroke(stroke, cap = StrokeCap.Round))
             }
         }
     }

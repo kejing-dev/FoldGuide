@@ -20,6 +20,7 @@ SOURCES = [
     os.path.join(ROOT, "app", "src", "main", "res", "values", "strings.xml"),
     os.path.join(ROOT, "app", "src", "main", "res", "values-zh", "strings.xml"),
     os.path.join(ROOT, "app", "src", "main", "java", "io", "embodit", "foldguide", "domain", "fold", "FoldLibrary.kt"),
+    os.path.join(ROOT, "app", "src", "main", "java", "io", "embodit", "foldguide", "domain", "fold", "FoldLibraryData.kt"),
 ]
 EXTRA = "，。、；：？！…—·（）《》〈〉“”‘’「」『』【】｜　～●○✓×÷°±→←↑↓" + "0123456789一二三四五六七八九十步分钟秒厘米"
 

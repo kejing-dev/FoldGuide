@@ -1,6 +1,7 @@
 package io.embodit.foldguide.data
 
 import android.content.Context
+import io.embodit.foldguide.domain.fold.Paper
 import io.embodit.foldguide.domain.model.CurrentFold
 import io.embodit.foldguide.domain.model.Hand
 import io.embodit.foldguide.domain.model.LanguagePref
@@ -33,6 +34,8 @@ class PrefsFoldRepository(context: Context) : FoldRepository {
                 hand = Hand.entries.firstOrNull { it.name == o.optString("hand") } ?: Hand.RIGHT,
                 dwell = o.optBoolean("dwell", defaultDwell),
                 welcomeSeen = o.optBoolean("welcomeSeen", false),
+                paper = Paper.byId(o.optString("paper")) ?: Paper.SQUARE,
+                paperChosen = o.optBoolean("paperChosen", false),
             )
         }.getOrDefault(Settings(dwell = defaultDwell))
     }
@@ -43,6 +46,8 @@ class PrefsFoldRepository(context: Context) : FoldRepository {
         o.put("hand", settings.hand.name)
         o.put("dwell", settings.dwell)
         o.put("welcomeSeen", settings.welcomeSeen)
+        o.put("paper", settings.paper.id)
+        o.put("paperChosen", settings.paperChosen)
         prefs.edit().putString(KEY_SETTINGS, o.toString()).apply()
     }
 
@@ -54,14 +59,14 @@ class PrefsFoldRepository(context: Context) : FoldRepository {
             val arr = o.optJSONArray("done") ?: JSONArray()
             for (i in 0 until arr.length()) done += arr.getString(i)
             val cur = o.optJSONObject("current")
-            Progress(done, cur?.let { CurrentFold(it.getString("model"), it.getInt("step")) })
+            Progress(done, cur?.let { CurrentFold(it.getString("model"), it.getInt("step"), Paper.byId(it.optString("paper")) ?: Paper.SQUARE) })
         }.getOrDefault(Progress())
     }
 
     override fun saveProgress(progress: Progress) {
         val o = JSONObject()
         o.put("done", JSONArray(progress.done.toList()))
-        progress.current?.let { c -> o.put("current", JSONObject().put("model", c.modelId).put("step", c.step)) }
+        progress.current?.let { c -> o.put("current", JSONObject().put("model", c.modelId).put("step", c.step).put("paper", c.paper.id)) }
         prefs.edit().putString(KEY_PROGRESS, o.toString()).apply()
     }
 

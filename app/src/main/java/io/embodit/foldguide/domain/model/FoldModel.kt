@@ -1,5 +1,7 @@
 package io.embodit.foldguide.domain.model
 
+import io.embodit.foldguide.domain.fold.Paper
+
 /** Why spatial sensing cannot be used (from the HMD provider's support state). */
 enum class BlockReason { NOT_IN_FULL_SPACE, WITHOUT_PERMISSION, DEVICE_NOT_SUPPORTED }
 
@@ -16,10 +18,13 @@ data class Settings(
     /** Look-to-advance (1 s on "Next"). Default on; debug builds start with it off (design `input.dwell`). */
     val dwell: Boolean = true,
     val welcomeSeen: Boolean = false,
+    /** The paper the user folds with (v0.1.1): asked once after the welcome, changeable from the library. */
+    val paper: Paper = Paper.SQUARE,
+    val paperChosen: Boolean = false,
 )
 
-/** Where the user left off: model id and zero-based step (design `dataModel.progress.current`). */
-data class CurrentFold(val modelId: String, val step: Int)
+/** Where the user left off: model id, the paper and zero-based step (design `dataModel.progress.current`). */
+data class CurrentFold(val modelId: String, val step: Int, val paper: Paper = Paper.SQUARE)
 
 /** Persisted progress: finished models and the unfinished one. */
 data class Progress(

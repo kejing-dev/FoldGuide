@@ -1,6 +1,6 @@
 <vector xmlns:android="http://schemas.android.com/apk/res/android" android:width="108dp" android:height="108dp" android:viewportWidth="108" android:viewportHeight="108">
-    <!-- a square sheet with its top-right corner folded down (light pink = the back), a short dashed valley line beside the fold -->
-    <path android:pathData="M30,30H64L78,44V78H30Z" android:fillColor="#FFFFFFFF"/>
-    <path android:pathData="M64,30L78,44H64Z" android:fillColor="#FFF7C6D3"/>
-    <path android:pathData="M57,26L60,29M62.5,31.5L65.5,34.5M68,37L71,40M73.5,42.5L76.5,45.5" android:strokeColor="#B3FFFFFF" android:strokeWidth="2.4" android:strokeLineCap="round" android:fillColor="#00000000"/>
+    <!-- a square sheet with its top-right corner folded down (mist blue = the back), a short dashed valley line beside the fold -->
+    <path android:pathData="M30,30H64L78,44V78H30Z" android:fillColor="#FFFFF8EF"/>
+    <path android:pathData="M64,30L78,44H64Z" android:fillColor="#FFAFCBEB"/>
+    <path android:pathData="M57,26L60,29M62.5,31.5L65.5,34.5M68,37L71,40M73.5,42.5L76.5,45.5" android:strokeColor="#FF7FA6D6" android:strokeWidth="2.4" android:strokeLineCap="round" android:fillColor="#00000000"/>
 </vector>

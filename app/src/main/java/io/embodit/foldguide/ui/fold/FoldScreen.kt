@@ -91,6 +91,7 @@ fun FoldScreen() {
         viewModel.effects.collect { effect: FoldUiEffect ->
             when (effect) {
                 FoldUiEffect.SeedDemo -> scene.seedDemo()
+                FoldUiEffect.PlaceVirtual -> scene.placeVirtual()
                 FoldUiEffect.RestartSensing -> scene.restartSensing()
                 FoldUiEffect.OpenAppSettings ->
                     runCatching {

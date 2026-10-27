@@ -3,8 +3,9 @@
 Origami coaching app for PICO OS 6. Kotlin, PICO Spatial SDK 6.1.9, one Mixed Stage (Full Space,
 passthrough), package `io.embodit.foldguide`. A life-size (15 cm) demo sheet lies on your desk beside your
 own paper; for every step it draws the fold line, tints the flap that moves, arches an arrow to the landing
-and then folds itself three times, stopping folded. You fold your real paper along. Four models: Folding
-Basics (symbols), Puppy Face, Paper Cup, Masu Box. No paper detection, no aligning (gate B decision).
+and then folds itself three times, stopping folded. You fold your real paper along. No paper detection, no
+aligning (gate B decision). v0.1.1 (see "v0.1.1 polish" below): pastel palette, 18 models on six shelves, and
+printer paper (A4 / Letter) besides the 15 cm square.
 
 Design package (binding): `../spatial-app-factory/apps/fold-guide/design-package.json` (archetype D,
 container STAGE_MIXED, window model single_panel_with_popup, 14 states S00 - S18, copy, fold data).
@@ -13,8 +14,45 @@ data and engine rules as `FoldLibrary.kt` / `FoldEngine.kt`). Reference project 
 `../spatial-ruler` (its `AGENTS.md` holds the SDK findings this app relies on; `../fire-plan` is the
 sibling built from it the same week).
 
-Built by the factory's build station on 2026-10-25 (v0.1.0, debug) and self-tested on emulator-5564 the same
+Built by the factory's build station on 2026-10-25 (v0.1.0, debug; v0.1.1 polish on pc1 2026-10-26) and self-tested on emulator-5564 the same
 day (see "Verified on the emulator"); QA does the full pass next (see "QA hooks").
+
+## v0.1.1 polish (pc1, 2026-10-26; user feedback after trying v0.1.0 on the headset)
+
+User, verbatim: "颜色现在有点丑，可以用低饱和色吗，清新可爱一点，然后library 太少了，就4个，要多一点，另外打印纸尺寸
+的也支持，不要只有方的".
+
+- **Palette** (`ui/theme/FoldColors.kt`): cream paper cards with ink text instead of the dark glass (opaque root,
+  `// design-style: opaque-root`; Stage attachment panels have no system glass switch), mist-blue primary buttons and
+  selections, oat plain buttons, mint done, coral danger. 3D: mist-pink colour side, cream back, ink halo under the white
+  fold line, mist-blue flap / arrows / reticle dashes, mint landings. All 16 `ColorScheme` roles are set in
+  `FoldGuideTheme`. Icon: dusty mist-pink tile, cream sheet, mist-blue folded corner. `verify-design-style.sh` PASS.
+- **Library: 18 models, six shelves** (入门 / 动物 / 花草 / 日常 / 盒子 / 飞机): basics, square from printer paper; puppy,
+  kitten, fox, cicada, whale; tulip, four-petal flower; heart, envelope, paper hat; cup, masu, card wallet; paper arrow,
+  dart, glider (Nakamura lock). The library panel: paper chip + gear, a SegmentControl of shelves, two-column tiles.
+- **Fold data is authored in Python** (`tools/foldlib/`): `engine.py` (port of FoldEngine, plus layer-range folds, cut,
+  turn 45 degrees, reset), `models.py` (the four v0.1.0 models verbatim, the printer-paper prep, checks),
+  `library_v011.py` (the new models), `render.py` (one PNG per model and paper: every step with line, flap, landing),
+  `gen_kotlin.py` -> `domain/fold/FoldLibraryData.kt` (GENERATED, do not edit). Workflow: edit the Python, run
+  `python -I tools/foldlib/models.py` (landings <= 0.5 mm, bounds, copy budgets), `render.py build/foldlib`, look at the
+  pictures, `gen_kotlin.py`, `subset_cjk_font.py` (new Chinese characters), unit tests.
+- **Paper** (`Paper` SQUARE / A4 / LETTER, `Settings.paper`, asked once after the welcome: S19 `Mode.PAPER`, the chip
+  on S07 opens it again). Printer-paper models (makesquare, hat, wallet, dart, glider) are authored on the paper's own
+  proportions; square models on printer paper start with the prep: fold the near-right corner up onto the left edge,
+  crease the strip, cut it off (StepKind.CUT: the strip slides away and fades), unfold (`leavesCrease`, `resetTo`
+  SQUARE), and for diamond models turn the square 45 degrees (StepKind.ROTATE, `resetTo` DIAMOND). Model units stay
+  150 per sheet width; `FoldModel.scale` (1.4 on A4, 1.44 on Letter) scales the paper root, so the demo is life-size;
+  the guide panel's offsets scale with it. `CurrentFold` remembers the paper.
+- **No scanning stall, no walking** (factory rules D7 / B17): S02 waits about 5 s for a desk, then the sheet goes on a
+  virtual desk top 0.45 m ahead and 0.42 m below the eyes (`FoldScene.placeVirtual`, `VirtualDeskView`, cream plate
+  under the sheet); "Put it in front" on S02 / S03 / S15 does it at once. S15 now offers it as the primary action.
+- **Headset install**: v0.1.0 on the headset was signed by kj-home-pc's debug key; `install -r` from pc1 fails with
+  INSTALL_FAILED_UPDATE_INCOMPATIBLE, so it was uninstalled first (its progress was lost).
+
+Debug hooks added: `paper <square|a4|letter>`, `category <shelf>`, `virtual`, `state S19`; controls `paper_chip`,
+`paper_<id>`, `cat_<shelf>`, `in_front`, `model_<id>`. v0.1.1 screenshots: `../spatial-app-factory/apps/fold-guide/build/
+v011-contact.png` (cut, turn, A4 dog, cicada / dart / heart done, Letter hat, glider) and `v011-contact-2.png` (S01, S19,
+S07 A4 animals / square basics, S15, S03 on A4, virtual desk, S08, S13), taken on emulator-5562 (PICO_6_1_Factory2).
 
 ## Structure
 
@@ -27,8 +65,9 @@ app/src/main/java/io/embodit/foldguide/
     input/ControllerInput      controller ray, trigger, thumbstick                        [from Fire Plan]
     input/SystemPointer        what is known about the gaze + pinch pointer               [from Spatial Ruler]
   domain/model                 Vec3 / Quat4, PlaneSurface, Settings, Progress, LanguagePref, Hand
-  domain/fold                  Geometry (2D), FoldEngine (fold-all / fold-top / flip / crease, animParts),
-                               FoldLibrary (the four models: every line, pick, landing in mm)
+  domain/fold                  Geometry (2D), FoldEngine (fold-all / fold-top / layer range / flip / crease / cut /
+                               turn 45, animParts), FoldLibrary (Paper, Category, FoldEntry, FoldModel per paper),
+                               FoldLibraryData (GENERATED by tools/foldlib/gen_kotlin.py)
   domain/usecase               DeskUseCase (which planes are desks, the sheet's yaw), HitSurface, FacePanel,
                                RestBody, ViewFrame                                        [last four from Spatial Ruler]
   data/FoldRepository          SharedPreferences JSON: progress (done set + current model/step), settings

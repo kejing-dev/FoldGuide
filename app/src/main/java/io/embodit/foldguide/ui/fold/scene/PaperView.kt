@@ -17,8 +17,8 @@ import kotlin.math.abs
 import kotlin.math.sin
 import kotlinx.coroutines.yield
 
-/** What the demo sheet is doing. */
-internal enum class PaperPlay { STATIC, FOLD, CREASE, FLIP, GHOST }
+/** What the demo sheet is doing (v0.1.1: CUT slides the strip off, ROTATE turns the square into a diamond). */
+internal enum class PaperPlay { STATIC, FOLD, CREASE, FLIP, GHOST, CUT, ROTATE }
 
 /**
  * The demo sheet (design `entities3d.demoPaper`): the facets of the current sheet as meshes under a
@@ -28,7 +28,7 @@ internal enum class PaperPlay { STATIC, FOLD, CREASE, FLIP, GHOST }
  */
 internal class PaperView(private val parent: Entity, private val materials: SceneMaterials) {
 
-    private class Hinge(val entity: Entity, val axis: Vec3, val sign: Float, val pieces: List<Piece>)
+    private class Hinge(val entity: Entity, val axis: Vec3, val sign: Float, val pieces: List<Piece>, val base: Vec3, val away: Vec3)
 
     private var group: Entity? = null
     private var stayPieces: List<Piece> = emptyList()
@@ -55,6 +55,10 @@ internal class PaperView(private val parent: Entity, private val materials: Scen
     var roll = 0f
         private set
 
+    /** Turn about the vertical axis (rotate steps: 0 -> 45 degrees); the guides follow it. */
+    var turn = 0f
+        private set
+
     val built: Boolean
         get() = group != null
 
@@ -69,6 +73,7 @@ internal class PaperView(private val parent: Entity, private val materials: Scen
         finished = false
         lift = 0f
         roll = 0f
+        turn = 0f
     }
 
     fun setVisible(visible: Boolean) {
@@ -92,7 +97,7 @@ internal class PaperView(private val parent: Entity, private val materials: Scen
         halfWidthM = maxOf(abs(b[0]), abs(b[2])) / 1000f
         val minZ = sheet.facets.minOfOrNull { it.z } ?: 0
         fun heightOf(f: Facet) = BASE_M + (f.z - minZ) * LAYER_M
-        val turning = step != null && step.turns && (play == PaperPlay.FOLD || play == PaperPlay.CREASE || play == PaperPlay.GHOST)
+        val turning = step != null && step.marks && (play == PaperPlay.FOLD || play == PaperPlay.CREASE || play == PaperPlay.GHOST || play == PaperPlay.CUT)
         val parts = if (turning) FoldEngine.animParts(sheet, step!!) else null
         val stay = parts?.stay ?: sheet.facets
         stayPieces = facets(g, stay, ::heightOf, Pt.ZERO, 0f, "stay")
@@ -158,7 +163,7 @@ internal class PaperView(private val parent: Entity, private val materials: Scen
         val side = Vec3((pick.x - foot.x), 0f, -(pick.y - foot.y)).normalized()
         val up = axis.cross(side)
         if (up.y < 0f) axis = -axis
-        return Hinge(e, axis, if (sp.mountain) -1f else 1f, pieces)
+        return Hinge(e, axis, if (sp.mountain) -1f else 1f, pieces, a.localVec(pivotY), side)
     }
 
     /** Hinge angles and the sheet's lift for the moment [nowMs]. Returns true while something moves. */
@@ -171,6 +176,8 @@ internal class PaperView(private val parent: Entity, private val materials: Scen
                 return false
             }
             PaperPlay.FLIP -> return animateFlip(nowMs)
+            PaperPlay.CUT -> return animateCut(nowMs)
+            PaperPlay.ROTATE -> return animateRotate(nowMs)
             PaperPlay.FOLD, PaperPlay.CREASE -> Unit
         }
         val t = nowMs - startMs
@@ -226,6 +233,46 @@ internal class PaperView(private val parent: Entity, private val materials: Scen
         return !finished
     }
 
+    /**
+     * Cut: the strip slides 40 mm away from the cut line while it fades (pause 0.6 s, slide 0.9 s, hold
+     * 0.4 s), three times; then it is gone.
+     */
+    private fun animateCut(nowMs: Long): Boolean {
+        val t = nowMs - startMs
+        val loop = (t / CYCLE_MS).toInt()
+        val u = (t % CYCLE_MS).toFloat()
+        if (loop >= 1) playedOnce = true
+        val k =
+            if (loop >= LOOPS) {
+                finished = true
+                1f
+            } else if (u < PAUSE_MS) 0f
+            else Ease.inOutQuad(((u - PAUSE_MS) / FOLD_MS).coerceIn(0f, 1f))
+        for (h in hinges) {
+            h.entity.setLocal(position = h.base + h.away * (CUT_SLIDE_M * k))
+            h.entity.setOpacity(1f - k)
+            h.entity.enabled = k < 0.99f
+        }
+        return !finished
+    }
+
+    /** Rotate: the whole sheet turns 45 degrees about its centre in 0.9 s, pause, twice; then it stays turned. */
+    private fun animateRotate(nowMs: Long): Boolean {
+        val t = nowMs - startMs
+        val loop = (t / FLIP_CYCLE_MS).toInt()
+        val u = (t % FLIP_CYCLE_MS).toFloat()
+        if (loop >= 1) playedOnce = true
+        val share =
+            if (loop >= FLIP_LOOPS) {
+                finished = true
+                1f
+            } else if (u < PAUSE_MS) 0f
+            else Ease.inOutQuad(((u - PAUSE_MS) / FOLD_MS).coerceIn(0f, 1f))
+        turn = QUARTER_PI * share
+        group?.setLocal(rotation = Quat4.axisAngle(Vec3.UP, turn))
+        return !finished
+    }
+
     /** Current angle of the first hinge (debug `dump`). */
     fun angleShare(): Float {
         return if (play == PaperPlay.GHOST) ghostShare else -1f
@@ -248,5 +295,7 @@ internal class PaperView(private val parent: Entity, private val materials: Scen
         const val LIFT_MS = 600f
         const val FLIP_CYCLE_MS = 2100L
         const val FLIP_LOOPS = 2
+        const val CUT_SLIDE_M = 0.04f
+        const val QUARTER_PI = (PI / 4).toFloat()
     }
 }

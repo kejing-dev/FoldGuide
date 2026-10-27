@@ -5,8 +5,8 @@
 
     <string name="loading">Getting ready…</string>
 
-    <string name="welcome_title">Get an origami square</string>
-    <string name="welcome_paper">15 cm / 6 in square</string>
+    <string name="welcome_title">Get some paper</string>
+    <string name="welcome_paper">Square or printer paper</string>
     <string name="welcome_table">A table</string>
     <string name="welcome_body">A demo sheet on your table folds each step; you follow along</string>
     <string name="welcome_go">OK, pick something</string>
@@ -19,7 +19,7 @@
     <string name="finding_body">Continues as soon as the desk is found</string>
 
     <string name="place_title">Look at the desk beside your paper and pinch to place the demo</string>
-    <string name="place_body">Same size as your paper (15 cm), either side</string>
+    <string name="place_body">Same size as your paper (%s), either side</string>
     <string name="pose_colour_down">colour side down</string>
 
     <string name="step_count">%1$d / %2$d</string>
@@ -55,7 +55,7 @@
     <string name="resume_body">Put your paper back and place the demo again</string>
 
     <string name="nodesk_title">Can\'t find a desk</string>
-    <string name="nodesk_body">Turn on a light, move closer, look around slowly</string>
+    <string name="nodesk_body">No problem: the demo can sit right in front of you</string>
 
     <string name="perm_title">Spatial permission needed</string>
     <string name="perm_body">so the demo sheet can sit on your desk</string>
@@ -77,4 +77,26 @@
     <string name="settings_clear">Clear history</string>
     <string name="settings_about_body">v%s · Tip: colour side down, set it like the demo</string>
     <string name="confirm_clear">Clear what you\'ve folded?</string>
+
+    <!-- v0.1.1: paper choice, shelves, put it in front -->
+    <string name="paper_title">What paper do you have?</string>
+    <string name="paper_chip">Paper: %s</string>
+    <string name="paper_square">Square</string>
+    <string name="paper_a4">A4</string>
+    <string name="paper_letter">Letter</string>
+    <string name="paper_square_size">15 cm / 6 in</string>
+    <string name="paper_a4_size">21 × 29.7 cm</string>
+    <string name="paper_letter_size">8.5 × 11 in</string>
+    <string name="paper_body">Printer paper: square models start by cutting a square</string>
+    <string name="cat_basics">Basics</string>
+    <string name="cat_animals">Animals</string>
+    <string name="cat_flowers">Flowers</string>
+    <string name="cat_everyday">Everyday</string>
+    <string name="cat_boxes">Boxes</string>
+    <string name="cat_planes">Planes</string>
+    <string name="action_in_front">Put it in front</string>
+    <string name="pose_long_side_away">long side away</string>
+    <string name="step_first_printer">Printer paper is white on both sides; the demo marks one side pink</string>
+    <string name="step_first_rect">Take a sheet of printer paper, long side away, like the demo</string>
+    <string name="step_after_prep">That is your square now: set it like the demo</string>
 </resources>

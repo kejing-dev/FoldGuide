@@ -5,8 +5,8 @@
 
     <string name="loading">准备中…</string>
 
-    <string name="welcome_title">准备一张折纸</string>
-    <string name="welcome_paper">15 × 15 cm 折纸</string>
+    <string name="welcome_title">准备一张纸</string>
+    <string name="welcome_paper">正方形折纸或打印纸</string>
     <string name="welcome_table">一张桌子</string>
     <string name="welcome_body">桌上会出现一张演示纸，它折一步，你跟着折一步</string>
     <string name="welcome_go">好，选一个折</string>
@@ -19,7 +19,7 @@
     <string name="finding_body">找到桌面就会自动继续</string>
 
     <string name="place_title">看着你纸旁边的桌面，捏一下放演示纸</string>
-    <string name="place_body">演示纸和你的纸一样大（15 cm），左边右边都行</string>
+    <string name="place_body">演示纸和你的纸一样大（%s），左边右边都行</string>
     <string name="pose_colour_down">彩色面朝下</string>
 
     <string name="step_count">%1$d / %2$d</string>
@@ -55,7 +55,7 @@
     <string name="resume_body">把你的纸放回桌上，再放一次演示纸</string>
 
     <string name="nodesk_title">找不到桌面</string>
-    <string name="nodesk_body">开灯、靠近桌子、慢慢低头看一圈</string>
+    <string name="nodesk_body">没关系，演示纸可以直接放在你面前</string>
 
     <string name="perm_title">需要空间权限</string>
     <string name="perm_body">才能把演示纸放到你的桌上</string>
@@ -77,4 +77,26 @@
     <string name="settings_clear">清空记录</string>
     <string name="settings_about_body">v%s · 小贴士：彩色面朝下、跟演示纸摆成一样</string>
     <string name="confirm_clear">清空折过的记录？</string>
+
+    <!-- v0.1.1: paper choice, shelves, put it in front -->
+    <string name="paper_title">你手上是什么纸？</string>
+    <string name="paper_chip">纸：%s</string>
+    <string name="paper_square">正方形折纸</string>
+    <string name="paper_a4">A4</string>
+    <string name="paper_letter">Letter</string>
+    <string name="paper_square_size">15 厘米见方</string>
+    <string name="paper_a4_size">21 × 29.7 厘米</string>
+    <string name="paper_letter_size">8.5 × 11 英寸</string>
+    <string name="paper_body">用打印纸：方形作品会先教你裁出一张正方形</string>
+    <string name="cat_basics">入门</string>
+    <string name="cat_animals">动物</string>
+    <string name="cat_flowers">花草</string>
+    <string name="cat_everyday">日常</string>
+    <string name="cat_boxes">盒子</string>
+    <string name="cat_planes">飞机</string>
+    <string name="action_in_front">放在面前</string>
+    <string name="pose_long_side_away">长边朝前</string>
+    <string name="step_first_printer">打印纸两面都是白的，演示纸用粉色标出一面</string>
+    <string name="step_first_rect">拿一张打印纸，长边朝前，跟演示纸一样放</string>
+    <string name="step_after_prep">这就是你的正方形，照演示摆好</string>
 </resources>

@@ -5,7 +5,9 @@ import android.content.pm.ApplicationInfo
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
+import io.embodit.foldguide.domain.fold.Category
 import io.embodit.foldguide.domain.fold.FoldLibrary
+import io.embodit.foldguide.domain.fold.Paper
 import io.embodit.foldguide.domain.fold.StepKind
 import io.embodit.foldguide.domain.model.BlockReason
 import io.embodit.foldguide.domain.model.CurrentFold
@@ -43,7 +45,7 @@ class FoldViewModel(private val appContext: Context) : ViewModel() {
     private val repository = FoldGraph.repository(appContext)
     private val debuggable = (appContext.applicationInfo.flags and ApplicationInfo.FLAG_DEBUGGABLE) != 0
 
-    private val _state = MutableStateFlow(FoldUiState(settings = repository.loadSettings(defaultDwell = !debuggable), progress = repository.loadProgress()))
+    private val _state = MutableStateFlow(initialState())
     val state: StateFlow<FoldUiState> = _state.asStateFlow()
 
     private val _effects = MutableSharedFlow<FoldUiEffect>(extraBufferCapacity = 8, onBufferOverflow = BufferOverflow.DROP_OLDEST)
@@ -58,6 +60,19 @@ class FoldViewModel(private val appContext: Context) : ViewModel() {
 
     /** Where to go back after "move the demo sheet" / cancel: the step (true) or the library. */
     private var placingFromStep = false
+
+    private fun initialState(): FoldUiState {
+        val settings = repository.loadSettings(defaultDwell = !debuggable)
+        val progress = repository.loadProgress()
+        val cur = progress.current
+        val start = if (cur != null && FoldLibrary.model(cur.modelId, cur.paper) != null) FoldLibrary.entry(cur.modelId) else null
+        return FoldUiState(
+            settings = settings,
+            progress = progress,
+            paper = settings.paper,
+            category = start?.category?.takeIf { FoldLibrary.shelf(it, settings.paper).isNotEmpty() } ?: Category.BASICS,
+        )
+    }
 
     init {
         FoldLog.i("STATE S00 (init) progress=${s.progress} settings=${s.settings}")
@@ -95,10 +110,10 @@ class FoldViewModel(private val appContext: Context) : ViewModel() {
                 if (s.mode == Mode.FINDING_DESK && count > 0 && !s.hold) deskFound()
             }
             is FoldEvent.DemoPlaceRequested ->
-                if (s.mode == Mode.PLACE_DEMO) placeDemo(event.center, event.yaw)
+                if (s.mode == Mode.PLACE_DEMO || (event.virtual && (s.mode == Mode.FINDING_DESK || s.mode == Mode.NO_DESK))) placeDemo(event.center, event.yaw, event.virtual)
                 else if (event.force) {
-                    FoldLog.i("DEMO seeded center=${FoldLog.pos(event.center)}")
-                    update { copy(demo = DemoPose(event.center, event.yaw)) }
+                    FoldLog.i("DEMO seeded center=${FoldLog.pos(event.center)} virtual=${event.virtual}")
+                    update { copy(demo = DemoPose(event.center, event.yaw, event.virtual)) }
                 }
             is FoldEvent.DemoPlayed -> if (event.serial == s.stepSerial && !s.playedOnce) update { copy(playedOnce = true) }
             is FoldEvent.ControllerChanged -> if (event.active != s.controllerActive) update { copy(controllerActive = event.active) }
@@ -112,9 +127,20 @@ class FoldViewModel(private val appContext: Context) : ViewModel() {
             }
             FoldEvent.WelcomeDone -> {
                 saveSettings(s.settings.copy(welcomeSeen = true))
-                update { copy(mode = Mode.LIBRARY) }
+                update { copy(mode = if (settings.paperChosen) Mode.LIBRARY else Mode.PAPER) }
             }
-            is FoldEvent.ModelPicked -> pickModel(event.index)
+            is FoldEvent.ModelPicked -> pickModel(event.id)
+            is FoldEvent.PaperPicked -> {
+                saveSettings(s.settings.copy(paper = event.paper, paperChosen = true))
+                FoldLog.i("PAPER ${event.paper.id}")
+                update { copy(mode = Mode.LIBRARY, category = shelfFor(category, event.paper)) }
+            }
+            FoldEvent.PaperChipClicked -> update { copy(mode = Mode.PAPER, settingsOpen = false, menuOpen = false, confirmClear = false) }
+            is FoldEvent.CategoryPicked -> update { copy(category = event.category) }
+            FoldEvent.PlaceInFrontClicked -> {
+                deskJob?.cancel()
+                _effects.tryEmit(FoldUiEffect.PlaceVirtual)
+            }
             FoldEvent.SettingsClicked -> update { copy(settingsOpen = !settingsOpen, confirmClear = false, menuOpen = false) }
             FoldEvent.BackClicked -> goLibrary()
             FoldEvent.CancelClicked -> cancelPlacing()
@@ -137,9 +163,8 @@ class FoldViewModel(private val appContext: Context) : ViewModel() {
             FoldEvent.AgainClicked -> enterStep(0)
             FoldEvent.ResumeClicked -> {
                 val cur = s.progress.current ?: return goLibrary()
-                val idx = FoldLibrary.indexOf(cur.modelId)
-                if (idx < 0) return goLibrary()
-                update { copy(modelIndex = idx, step = cur.step.coerceIn(0, FoldLibrary.all[idx].steps.size - 1)) }
+                val m = FoldLibrary.model(cur.modelId, cur.paper) ?: return goLibrary()
+                update { copy(modelId = m.id, paper = m.paper, step = cur.step.coerceIn(0, m.steps.size - 1)) }
                 placingFromStep = true
                 startPlacing()
             }
@@ -185,11 +210,18 @@ class FoldViewModel(private val appContext: Context) : ViewModel() {
             }
             is FoldEvent.DebugState -> debugState(event.spec)
             is FoldEvent.DebugModel -> {
-                val idx = FoldLibrary.indexOf(event.id)
-                if (idx >= 0) {
-                    update { copy(modelIndex = idx, step = 0) }
+                val e = FoldLibrary.entry(event.id)
+                if (e != null) {
+                    val paper = if (FoldLibrary.available(e, s.settings.paper)) s.settings.paper else Paper.A4
+                    update { copy(modelId = e.id, paper = paper, step = 0, category = e.category) }
                     if (s.mode == Mode.STEP || s.mode == Mode.DONE) enterStep(0)
                 }
+            }
+            is FoldEvent.DebugPaper -> {
+                saveSettings(s.settings.copy(paper = event.paper, paperChosen = true))
+                val keep = FoldLibrary.model(s.modelId, event.paper) != null
+                update { copy(paper = event.paper, modelId = if (keep) modelId else "basics", step = 0, category = shelfFor(category, event.paper)) }
+                if (s.mode == Mode.STEP || s.mode == Mode.DONE) enterStep(0)
             }
             is FoldEvent.DebugStep -> {
                 val n = (event.step - 1).coerceIn(0, s.model.steps.size - 1)
@@ -218,16 +250,22 @@ class FoldViewModel(private val appContext: Context) : ViewModel() {
         val next =
             when {
                 blockReason == BlockReason.WITHOUT_PERMISSION -> Mode.NO_PERMISSION
-                s.progress.current != null && FoldLibrary.byId(s.progress.current?.modelId) != null -> Mode.RESUME
+                s.progress.current?.let { FoldLibrary.model(it.modelId, it.paper) } != null -> Mode.RESUME
                 !s.settings.welcomeSeen -> Mode.WELCOME
+                !s.settings.paperChosen -> Mode.PAPER
                 else -> Mode.LIBRARY
             }
         update { copy(mode = next, hold = false) }
     }
 
-    private fun pickModel(index: Int) {
-        val idx = index.coerceIn(0, FoldLibrary.all.size - 1)
-        update { copy(modelIndex = idx, step = 0, settingsOpen = false, menuOpen = false) }
+    /** A shelf that has models for [paper]: [wanted] when it has, else the first. */
+    private fun shelfFor(wanted: Category, paper: Paper): Category = if (FoldLibrary.shelf(wanted, paper).isNotEmpty()) wanted else FoldLibrary.categories(paper).first()
+
+    private fun pickModel(id: String) {
+        val paper = s.settings.paper
+        val m = FoldLibrary.model(id, paper) ?: return
+        FoldLog.i("PICK ${m.key} steps=${m.steps.size} prep=${m.prepSteps}")
+        update { copy(modelId = m.id, paper = paper, step = 0, settingsOpen = false, menuOpen = false) }
         if (s.demo != null) enterStep(0)
         else {
             placingFromStep = false
@@ -248,10 +286,14 @@ class FoldViewModel(private val appContext: Context) : ViewModel() {
                 }
             return
         }
+        // factory rule D7: never stuck scanning; after ~5 s without a desk the sheet goes on a virtual desk top ahead
         deskJob =
             viewModelScope.launch {
-                delay(FINDING_TIMEOUT_MS)
-                if (s.mode == Mode.FINDING_DESK && !s.hold) update { copy(mode = Mode.NO_DESK) }
+                delay(VIRTUAL_AFTER_MS)
+                if (s.mode == Mode.FINDING_DESK && !s.hold) {
+                    FoldLog.i("DESK none after $VIRTUAL_AFTER_MS ms: virtual desk")
+                    _effects.tryEmit(FoldUiEffect.PlaceVirtual)
+                }
             }
     }
 
@@ -269,9 +311,10 @@ class FoldViewModel(private val appContext: Context) : ViewModel() {
         }
     }
 
-    private fun placeDemo(center: Vec3, yaw: Float) {
-        FoldLog.i("DEMO placed center=${FoldLog.pos(center)} yaw=${FoldLog.f(Math.toDegrees(yaw.toDouble()).toFloat(), 1)} model=${s.model.id} step=${s.step + 1}")
-        update { copy(demo = DemoPose(center, yaw)) }
+    private fun placeDemo(center: Vec3, yaw: Float, virtual: Boolean = false) {
+        deskJob?.cancel()
+        FoldLog.i("DEMO placed center=${FoldLog.pos(center)} yaw=${FoldLog.f(Math.toDegrees(yaw.toDouble()).toFloat(), 1)} virtual=$virtual model=${s.model.key} step=${s.step + 1}")
+        update { copy(demo = DemoPose(center, yaw, virtual)) }
         enterStep(s.step)
     }
 
@@ -283,7 +326,7 @@ class FoldViewModel(private val appContext: Context) : ViewModel() {
     private fun enterStep(index: Int) {
         val n = index.coerceIn(0, s.model.steps.size - 1)
         update { copy(mode = Mode.STEP, step = n, stepSerial = stepSerial + 1, playedOnce = false, menuOpen = false, settingsOpen = false, confirmClear = false, ghost = null) }
-        saveProgress(s.progress.copy(current = CurrentFold(s.model.id, n)))
+        saveProgress(s.progress.copy(current = CurrentFold(s.model.id, n, s.paper)))
         placingFromStep = true
         FoldLog.i("STEP ${s.model.id} ${n + 1}/${s.model.steps.size} kind=${s.currentStep.kind} serial=${s.stepSerial}")
     }
@@ -326,9 +369,13 @@ class FoldViewModel(private val appContext: Context) : ViewModel() {
         deskJob?.cancel()
         loadJob?.cancel()
         noPlanes = false
-        val modelArg = args.firstOrNull { FoldLibrary.byId(it) != null }
+        val modelArg = args.firstOrNull { FoldLibrary.entry(it) != null }
         val stepArg = args.firstNotNullOfOrNull { it.toIntOrNull() }
-        if (modelArg != null) update { copy(modelIndex = FoldLibrary.indexOf(modelArg)) }
+        if (modelArg != null) {
+            val e = FoldLibrary.entry(modelArg)!!
+            val paper = if (FoldLibrary.available(e, s.paper)) s.paper else if (FoldLibrary.available(e, s.settings.paper)) s.settings.paper else Paper.A4
+            update { copy(modelId = modelArg, paper = paper, category = e.category) }
+        }
         if (stepArg != null) update { copy(step = (stepArg - 1).coerceIn(0, model.steps.size - 1)) }
         fun needDemo() {
             if (s.demo == null) _effects.tryEmit(FoldUiEffect.SeedDemo)
@@ -344,8 +391,8 @@ class FoldViewModel(private val appContext: Context) : ViewModel() {
                 if (!hold) {
                     deskJob =
                         viewModelScope.launch {
-                            delay(FINDING_TIMEOUT_MS)
-                            if (s.mode == Mode.FINDING_DESK) update { copy(mode = Mode.NO_DESK) }
+                            delay(VIRTUAL_AFTER_MS)
+                            if (s.mode == Mode.FINDING_DESK) _effects.tryEmit(FoldUiEffect.PlaceVirtual)
                         }
                     if (s.deskCount > 0) deskFound()
                 }
@@ -359,16 +406,16 @@ class FoldViewModel(private val appContext: Context) : ViewModel() {
                 if (modelArg == null && stepArg == null) {
                     // a fitting default step for the kind (design qaCapture)
                     when (name) {
-                        "S08" -> update { copy(modelIndex = FoldLibrary.indexOf("masu"), step = 2) }
-                        "S09" -> update { copy(modelIndex = FoldLibrary.indexOf("cup"), step = 4) }
-                        else -> update { copy(modelIndex = FoldLibrary.indexOf("masu"), step = 6) }
+                        "S08" -> update { copy(modelId = "masu", paper = Paper.SQUARE, step = 2) }
+                        "S09" -> update { copy(modelId = "cup", paper = Paper.SQUARE, step = 4) }
+                        else -> update { copy(modelId = "masu", paper = Paper.SQUARE, step = 6) }
                     }
                 }
                 needDemo()
                 if (s.demo != null) enterStep(s.step) else update { copy(mode = Mode.STEP) }
             }
             "S12" -> {
-                if (modelArg == null) update { copy(modelIndex = FoldLibrary.indexOf("cup")) }
+                if (modelArg == null) update { copy(modelId = "cup", paper = Paper.SQUARE) }
                 needDemo()
                 update { copy(step = model.steps.size - 1) }
                 saveProgress(Progress(s.progress.done + s.model.id, current = null))
@@ -381,10 +428,11 @@ class FoldViewModel(private val appContext: Context) : ViewModel() {
             "S14" -> {
                 val m = modelArg ?: "masu"
                 val st = (stepArg ?: 5) - 1
-                saveProgress(s.progress.copy(current = CurrentFold(m, st)))
-                update { copy(mode = Mode.RESUME, demo = null, modelIndex = FoldLibrary.indexOf(m), step = st) }
+                saveProgress(s.progress.copy(current = CurrentFold(m, st, s.paper)))
+                update { copy(mode = Mode.RESUME, demo = null, modelId = m, step = st) }
             }
             "S15" -> update { copy(mode = Mode.NO_DESK) }
+            "S19" -> update { copy(mode = Mode.PAPER) }
             "S17" -> update { copy(mode = Mode.NO_PERMISSION, permissionTries = if ("second" in args) 1 else 0) }
             "S18" -> {
                 if (s.mode == Mode.LOADING || s.mode == Mode.WELCOME) update { copy(mode = Mode.LIBRARY) }
@@ -401,6 +449,11 @@ class FoldViewModel(private val appContext: Context) : ViewModel() {
         o.put("state", st.stateId)
         o.put("mode", st.mode.name)
         o.put("model", st.model.id)
+        o.put("paper", st.paper.id)
+        o.put("settingsPaper", st.settings.paper.id)
+        o.put("category", st.category.id)
+        o.put("prepSteps", st.model.prepSteps)
+        o.put("scale", st.model.scale.toDouble())
         o.put("step", st.step + 1)
         o.put("steps", st.model.steps.size)
         o.put("kind", st.currentStep.kind.name)
@@ -413,10 +466,10 @@ class FoldViewModel(private val appContext: Context) : ViewModel() {
         o.put("deskCount", st.deskCount)
         o.put("ghost", st.ghost ?: JSONObject.NULL)
         st.demo?.let { d ->
-            o.put("demo", JSONObject().put("x", d.center.x).put("y", d.center.y).put("z", d.center.z).put("yawDeg", Math.toDegrees(d.yaw.toDouble())))
+            o.put("demo", JSONObject().put("x", d.center.x).put("y", d.center.y).put("z", d.center.z).put("yawDeg", Math.toDegrees(d.yaw.toDouble())).put("virtual", d.virtual))
         }
         o.put("done", st.progress.done.toList())
-        st.progress.current?.let { c -> o.put("current", JSONObject().put("model", c.modelId).put("step", c.step + 1)) }
+        st.progress.current?.let { c -> o.put("current", JSONObject().put("model", c.modelId).put("step", c.step + 1).put("paper", c.paper.id)) }
         o.put("lang", st.settings.language.name)
         o.put("hand", st.settings.hand.name)
         o.put("dwell", st.settings.dwell)
@@ -426,7 +479,8 @@ class FoldViewModel(private val appContext: Context) : ViewModel() {
     private companion object {
         const val LOADING_MIN_MS = 1100L
         const val FINDING_MIN_MS = 700L
-        const val FINDING_TIMEOUT_MS = 20_000L
+        /** Factory rule D7: about 5 s without a desk, then the virtual desk top. */
+        const val VIRTUAL_AFTER_MS = 5_000L
         const val PERMISSION_RETRY_MS = 1500L
     }
 }

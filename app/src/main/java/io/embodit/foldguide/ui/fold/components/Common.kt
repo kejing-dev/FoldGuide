@@ -30,8 +30,9 @@ import com.pico.spatial.ui.design.IconButton
 import com.pico.spatial.ui.design.IconButtonDefaults
 import com.pico.spatial.ui.design.PicoTheme
 import com.pico.spatial.ui.design.Text
-import com.pico.spatial.ui.foundation.material.backgroundMaterial
-import com.pico.spatial.ui.platform.Material
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import io.embodit.foldguide.domain.fold.FoldEntry
 import io.embodit.foldguide.domain.fold.FoldModel
 import io.embodit.foldguide.domain.fold.Step
 import io.embodit.foldguide.domain.model.LanguagePref
@@ -43,11 +44,16 @@ internal val PanelPadding = 16.dp
 internal val KeyWidth = 48.dp
 internal val KeyHeight = 48.dp
 
-/** Glass root of a panel: clipped shape, Material.Regular, padding. */
+/**
+ * Root of a panel (v0.1.1): an opaque cream paper card with ink text instead of the dark glass, so the
+ * pastel palette reads the same over any room. Popups use the lighter milk card. Clipped shape, padding.
+ */
 @Composable
-internal fun Glass(width: Dp, height: Dp, corner: Dp = 32.dp, material: Material = Material.Regular, padding: Dp = PanelPadding, content: @Composable ColumnScope.() -> Unit) {
+internal fun Glass(width: Dp, height: Dp, corner: Dp = 32.dp, popup: Boolean = false, padding: Dp = PanelPadding, content: @Composable ColumnScope.() -> Unit) {
+    val shape = RoundedCornerShape(corner)
     Column(
-        modifier = Modifier.size(width, height).clip(RoundedCornerShape(corner)).backgroundMaterial(enable = true, style = material).padding(padding),
+        // design-style: opaque-root Stage attachment panels have no system glass; the cream card is the v0.1.1 palette
+        modifier = Modifier.size(width, height).clip(shape).background(if (popup) FoldColors.Milk else FoldColors.Cream, shape).border(1.dp, FoldColors.Divider, shape).padding(padding),
         verticalArrangement = Arrangement.spacedBy(8.dp),
     ) {
         content()
@@ -93,6 +99,10 @@ internal fun modelName(model: FoldModel, language: LanguagePref): String = if (i
 
 @Composable
 @ReadOnlyComposable
+internal fun entryName(entry: FoldEntry, language: LanguagePref): String = if (isChinese(language)) entry.nameZh else entry.nameEn
+
+@Composable
+@ReadOnlyComposable
 internal fun modelResult(model: FoldModel, language: LanguagePref): String = if (isChinese(language)) model.resultZh else model.resultEn
 
 @Composable
@@ -115,8 +125,8 @@ internal fun Key(name: String, iconRes: Int, description: String, enabled: Boole
 }
 
 /**
- * A worded button: capsule, 48 dp high. [primary] = interaction fill with white text (the confirming
- * action), [danger] = error fill with ink text; otherwise the tertiary fill with glass text.
+ * A worded button: capsule, 48 dp high. [primary] = mist-blue interaction fill (the confirming action),
+ * [danger] = coral error fill; otherwise the oat tertiary fill. Ink text on all of them.
  */
 @Composable
 internal fun WordButton(
@@ -137,8 +147,8 @@ internal fun WordButton(
         }
     val content =
         when {
-            danger -> FoldColors.Ink
-            primary -> FoldColors.LabelPrimaryLight
+            danger -> PicoTheme.colorScheme.labelPrimary
+            primary -> PicoTheme.colorScheme.labelPrimary
             enabled -> PicoTheme.colorScheme.labelPrimary
             else -> PicoTheme.colorScheme.labelQuaternary
         }
@@ -171,7 +181,7 @@ internal fun RowButton(
         modifier = Modifier.fillMaxWidth().height(height).probe(name, onClick),
         size = ButtonDefaults.Regular.copy(height = height, minWidth = 300.dp),
         shape = RoundedCornerShape(18.dp),
-        colors = ButtonDefaults.buttonColors(containerColor = if (highlighted) PicoTheme.colorScheme.interaction.copy(alpha = 0.32f) else PicoTheme.colorScheme.fillTertiary, contentColor = content),
+        colors = ButtonDefaults.buttonColors(containerColor = if (highlighted) PicoTheme.colorScheme.interaction.copy(alpha = 0.6f) else PicoTheme.colorScheme.fillTertiary, contentColor = content),
     ) {
         Text(text = text, color = content, style = FoldType.title, maxLines = 1, overflow = TextOverflow.Ellipsis)
         if (sub.isNotEmpty()) {
@@ -190,5 +200,28 @@ internal fun TitleRow(title: String, leading: (@Composable () -> Unit)? = null, 
         if (leading != null) leading()
         Text(text = title, color = PicoTheme.colorScheme.labelPrimary, style = FoldType.title, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f))
         if (trailing != null) trailing()
+    }
+}
+
+/**
+ * A library tile (v0.1.1, two per row): the model name over its steps and minutes, the level dots and
+ * a check at the right. [highlighted] = the mist-blue "start here" tile.
+ */
+@Composable
+internal fun TileButton(name: String, title: String, meta: String, trailing: String, highlighted: Boolean, onClick: () -> Unit, modifier: Modifier = Modifier) {
+    val content = PicoTheme.colorScheme.labelPrimary
+    Button(
+        onClick = onClick,
+        modifier = modifier.height(48.dp).probe(name, onClick),
+        size = ButtonDefaults.Regular.copy(height = 48.dp, minWidth = 120.dp),
+        shape = RoundedCornerShape(16.dp),
+        colors = ButtonDefaults.buttonColors(containerColor = if (highlighted) PicoTheme.colorScheme.interaction.copy(alpha = 0.7f) else PicoTheme.colorScheme.fillTertiary, contentColor = content),
+    ) {
+        Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.Center) {
+            Text(text = title, color = content, style = FoldType.label.copy(fontSize = PicoTheme.typography.bodyMedium.fontSize), maxLines = 1, overflow = TextOverflow.Ellipsis)
+            Text(text = meta, color = PicoTheme.colorScheme.labelSecondary, style = FoldType.label, maxLines = 1, overflow = TextOverflow.Ellipsis)
+        }
+        Spacer(modifier = Modifier.width(4.dp))
+        Text(text = trailing, color = PicoTheme.colorScheme.labelSecondary, style = FoldType.label, maxLines = 1, softWrap = false)
     }
 }

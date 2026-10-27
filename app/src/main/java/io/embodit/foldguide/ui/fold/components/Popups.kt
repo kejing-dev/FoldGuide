@@ -3,7 +3,6 @@ package io.embodit.foldguide.ui.fold.components
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.width
@@ -19,7 +18,6 @@ import com.pico.spatial.ui.design.SegmentControlDefaults
 import com.pico.spatial.ui.design.SegmentItem
 import com.pico.spatial.ui.design.Switch
 import com.pico.spatial.ui.design.Text
-import com.pico.spatial.ui.platform.Material
 import io.embodit.foldguide.BuildConfig
 import io.embodit.foldguide.R
 import io.embodit.foldguide.domain.model.Hand
@@ -37,7 +35,7 @@ import io.embodit.foldguide.ui.fold.scene.PanelSpec
 @Composable
 internal fun SettingsPanel(state: FoldUiState, filled: Boolean, onEvent: (FoldEvent) -> Unit) {
     val (w, h) = PanelSpec.SETTINGS_SIZE
-    Glass(w.dp, h.dp, corner = 24.dp, material = Material.Thick, padding = 14.dp) {
+    Glass(w.dp, h.dp, corner = 24.dp, popup = true, padding = 14.dp) {
         if (!filled) return@Glass
         if (state.confirmClear) {
             Text(text = rs(R.string.settings_title), color = PicoTheme.colorScheme.labelPrimary, style = FoldType.title, maxLines = 1)
@@ -87,22 +85,29 @@ private fun SettingRow(label: String, content: @Composable () -> Unit) {
     }
 }
 
-/** A SegmentControl whose items are [itemWidth] x 48. */
+/** A SegmentControl whose items are [itemWidth] x [itemHeight]; the selected item is mist blue. */
 @Composable
-private fun Segments(items: List<Pair<String, String>>, selected: Int, onSelect: (Int) -> Unit, itemWidth: androidx.compose.ui.unit.Dp) {
-    SegmentControl(modifier = Modifier.width(itemWidth * items.size).fillMaxHeight(), backgroundColor = PicoTheme.colorScheme.fillTertiary) {
+internal fun Segments(
+    items: List<Pair<String, String>>,
+    selected: Int,
+    onSelect: (Int) -> Unit,
+    itemWidth: androidx.compose.ui.unit.Dp,
+    itemHeight: androidx.compose.ui.unit.Dp = KeyHeight,
+    small: Boolean = false,
+) {
+    SegmentControl(modifier = Modifier.width(itemWidth * items.size).height(itemHeight), backgroundColor = PicoTheme.colorScheme.fillTertiary) {
         items.forEachIndexed { i, (name, text) ->
             val onClick = { onSelect(i) }
             SegmentItem(
                 selected = selected == i,
                 onClick = onClick,
-                modifier = Modifier.width(itemWidth).height(KeyHeight).probe(name, onClick),
-                textStyle = PicoTheme.typography.labelLarge,
+                modifier = Modifier.width(itemWidth).height(itemHeight).probe(name, onClick),
+                textStyle = if (small) PicoTheme.typography.labelMedium else PicoTheme.typography.labelLarge,
                 colors =
                     SegmentControlDefaults.colors(
                         itemBackgroundColor = Color.Transparent,
                         itemContentColor = PicoTheme.colorScheme.labelPrimary,
-                        selectedItemBackgroundColor = PicoTheme.colorScheme.fillSecondary,
+                        selectedItemBackgroundColor = PicoTheme.colorScheme.interaction,
                         selectedItemContentColor = PicoTheme.colorScheme.labelPrimary,
                     ),
                 title = {
@@ -118,7 +123,7 @@ private fun Segments(items: List<Pair<String, String>>, selected: Int, onSelect:
 @Composable
 internal fun MenuPanel(filled: Boolean, onEvent: (FoldEvent) -> Unit) {
     val (w, h) = PanelSpec.MENU_SIZE
-    Glass(w.dp, h.dp, corner = 24.dp, material = Material.Thick, padding = 8.dp) {
+    Glass(w.dp, h.dp, corner = 24.dp, popup = true, padding = 8.dp) {
         if (!filled) return@Glass
         RowButton("menu_move", rs(R.string.menu_move), "", "", false, { onEvent(FoldEvent.MenuMove) }, height = 48.dp)
         RowButton("menu_restart", rs(R.string.menu_restart), "", "", false, { onEvent(FoldEvent.MenuRestart) }, height = 48.dp)

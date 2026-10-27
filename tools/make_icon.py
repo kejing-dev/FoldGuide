@@ -3,18 +3,18 @@ icon (`res/drawable/ic_launcher_foreground.xml` on `@color/ic_launcher_backgroun
 
     python tools/make_icon.py <export.png>
 
-Kami rose tile, a white square sheet whose top-right corner is folded down (light pink back), a short
-dashed valley line beside the fold.
+v0.1.1 pastel: dusty mist-pink tile, a cream square sheet whose top-right corner is folded down
+(mist-blue back), a short blue dashed valley line beside the fold.
 """
 import sys
 from PIL import Image, ImageDraw
 
 S = 1024
 K = S / 108.0
-ROSE = (217, 70, 111, 255)
-WHITE = (255, 255, 255, 255)
-PINK = (247, 198, 211, 255)
-DASH = (255, 255, 255, 180)
+ROSE = (231, 169, 184, 255)
+WHITE = (255, 248, 239, 255)
+PINK = (175, 203, 235, 255)
+DASH = (127, 166, 214, 255)
 
 
 def main(out):

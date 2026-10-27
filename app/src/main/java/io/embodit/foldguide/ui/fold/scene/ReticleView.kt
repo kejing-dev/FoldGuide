@@ -2,48 +2,44 @@ package io.embodit.foldguide.ui.fold.scene
 
 import com.pico.spatial.core.ecs.Entity
 import com.pico.spatial.core.math.Vector3
-import io.embodit.foldguide.domain.fold.FoldEngine
 import io.embodit.foldguide.domain.fold.Pt
-import io.embodit.foldguide.domain.fold.StartPose
 import io.embodit.foldguide.domain.model.Quat4
 import io.embodit.foldguide.domain.model.Vec3
 
 /**
- * The placement reticle (design `entities3d.reticle`): a 15 cm dashed outline in the model's start
- * pose (square or diamond), rose 25 % inside, amber dashes, gliding over the desk under the gaze;
- * a coral cross where the gaze is not on a desk. Built once; shown and moved per frame.
+ * The placement reticle (design `entities3d.reticle`): a life-size dashed outline of the sheet in the
+ * model's start pose (square, diamond, A4 / Letter upright), mist pink inside, blue dashes, gliding over
+ * the desk under the gaze; a coral cross where the gaze is not on a desk. One frame per outline, built
+ * the first time it is needed; shown and moved per frame.
  */
 internal class ReticleView(private val parent: Entity, private val materials: SceneMaterials) {
-    private var square: Entity? = null
-    private var diamond: Entity? = null
+    private val frames = HashMap<String, Entity>()
     private var cross: Entity? = null
     private val pieces = ArrayList<Piece>()
-    private var shownPose: StartPose? = null
+    private var shownKey: String? = null
     private var crossShown = false
 
     /** True while a frame or the cross is on screen. */
     val shown: Boolean
-        get() = shownPose != null || crossShown
+        get() = shownKey != null || crossShown
 
     fun prepare() {
-        square = frame(StartPose.SQUARE)
-        diamond = frame(StartPose.DIAMOND)
         cross = buildCross()
-        square?.enabled = false
-        diamond?.enabled = false
         cross?.enabled = false
     }
 
-    private fun frame(pose: StartPose): Entity {
-        val e = Entity().named("reticle:${pose.name.lowercase()}")
+    /** A frame for [outline] (model units), scaled to the real sheet by [scale]. */
+    private fun frame(key: String, outline: List<Pt>, scale: Float): Entity {
+        val e = Entity().named("reticle:$key")
         parent.addChild(e)
-        val sheet = FoldEngine.start(pose).facets.first().pts
         val fill = MeshBuilder()
-        fill.polygon(sheet.map { it.local(0.0008f) }, MeshBuilder.UP)
+        fill.polygon(outline.map { it.local(0.0008f) }, MeshBuilder.UP)
         val dash = MeshBuilder()
-        for (i in sheet.indices) dashedEdge(dash, sheet[i], sheet[(i + 1) % sheet.size])
-        pieces += Piece(e, fill.build("reticle_${pose.name}_fill"), materials.roseGhost, "reticleFill")
-        pieces += Piece(e, dash.build("reticle_${pose.name}_dash"), materials.amberDash, "reticleDash")
+        for (i in outline.indices) dashedEdge(dash, outline[i], outline[(i + 1) % outline.size])
+        pieces += Piece(e, fill.build("reticle_${key}_fill"), materials.roseGhost, "reticleFill")
+        pieces += Piece(e, dash.build("reticle_${key}_dash"), materials.amberDash, "reticleDash")
+        e.setUniformScale(scale)
+        e.enabled = false
         return e
     }
 
@@ -70,29 +66,24 @@ internal class ReticleView(private val parent: Entity, private val materials: Sc
         return e
     }
 
-    /** Shows the frame of [pose] at [center] with [yaw] (desk plane). */
-    fun showFrame(pose: StartPose, center: Vec3, yaw: Float) {
-        val e = if (pose == StartPose.SQUARE) square else diamond
-        val other = if (pose == StartPose.SQUARE) diamond else square
-        if (shownPose != pose) {
-            other?.enabled = false
-            e?.enabled = true
-            shownPose = pose
+    /** Shows the frame [key] ([outline] in model units times [scale]) at [center] with [yaw] (desk plane). */
+    fun showFrame(key: String, outline: List<Pt>, scale: Float, center: Vec3, yaw: Float) {
+        val e = frames.getOrPut(key) { frame(key, outline, scale) }
+        if (shownKey != key) {
+            shownKey?.let { frames[it]?.enabled = false }
+            e.enabled = true
+            shownKey = key
         }
         if (crossShown) {
             cross?.enabled = false
             crossShown = false
         }
-        e?.setLocal(position = center, rotation = Quat4.axisAngle(Vec3.UP, yaw))
+        e.setLocal(position = center, rotation = Quat4.axisAngle(Vec3.UP, yaw))
     }
 
     /** Shows the cross at [at], facing the viewer. */
     fun showCross(at: Vec3, facing: Quat4) {
-        if (shownPose != null) {
-            square?.enabled = false
-            diamond?.enabled = false
-            shownPose = null
-        }
+        hideFrame()
         if (!crossShown) {
             cross?.enabled = true
             crossShown = true
@@ -100,12 +91,13 @@ internal class ReticleView(private val parent: Entity, private val materials: Sc
         cross?.setLocal(position = at, rotation = facing)
     }
 
+    private fun hideFrame() {
+        shownKey?.let { frames[it]?.enabled = false }
+        shownKey = null
+    }
+
     fun hide() {
-        if (shownPose != null) {
-            square?.enabled = false
-            diamond?.enabled = false
-            shownPose = null
-        }
+        hideFrame()
         if (crossShown) {
             cross?.enabled = false
             crossShown = false
@@ -115,11 +107,10 @@ internal class ReticleView(private val parent: Entity, private val materials: Sc
     fun destroy() {
         pieces.forEach { it.destroy() }
         pieces.clear()
-        runCatching { square?.destroy(true) }
-        runCatching { diamond?.destroy(true) }
+        frames.values.forEach { runCatching { it.destroy(true) } }
+        frames.clear()
         runCatching { cross?.destroy(true) }
-        square = null
-        diamond = null
         cross = null
+        shownKey = null
     }
 }

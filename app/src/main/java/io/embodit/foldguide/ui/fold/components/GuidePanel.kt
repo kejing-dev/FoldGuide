@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -29,6 +30,8 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import com.pico.spatial.ui.design.Button
+import com.pico.spatial.ui.design.ButtonDefaults
 import com.pico.spatial.ui.design.CircularProgressDefaults
 import com.pico.spatial.ui.design.CircularProgressIndicator
 import com.pico.spatial.ui.design.Icon
@@ -36,12 +39,15 @@ import com.pico.spatial.ui.design.LinearProgressIndicator
 import com.pico.spatial.ui.design.PicoTheme
 import com.pico.spatial.ui.design.Text
 import io.embodit.foldguide.R
+import io.embodit.foldguide.domain.fold.Category
 import io.embodit.foldguide.domain.fold.FoldLibrary
+import io.embodit.foldguide.domain.fold.Paper
 import io.embodit.foldguide.domain.fold.StartPose
 import io.embodit.foldguide.domain.fold.StepKind
 import io.embodit.foldguide.ui.fold.FoldEvent
 import io.embodit.foldguide.ui.fold.FoldUiState
 import io.embodit.foldguide.ui.fold.Mode
+import io.embodit.foldguide.ui.fold.debug.probe
 import io.embodit.foldguide.ui.fold.scene.PanelSpec
 import io.embodit.foldguide.ui.theme.FoldColors
 
@@ -66,6 +72,7 @@ internal fun GuidePanel(state: FoldUiState, filled: Boolean, onEvent: (FoldEvent
             Mode.RESUME -> Resume(state, onEvent)
             Mode.NO_DESK -> NoDesk(onEvent)
             Mode.NO_PERMISSION -> NoPermission(state, onEvent)
+            Mode.PAPER -> PaperChoice(state, onEvent)
         }
     }
 }
@@ -85,7 +92,7 @@ private fun ColumnScope.Loading() {
 private fun ColumnScope.Welcome(onEvent: (FoldEvent) -> Unit) {
     Text(text = rs(R.string.welcome_title), color = PicoTheme.colorScheme.labelPrimary, style = FoldType.big, maxLines = 1, overflow = TextOverflow.Ellipsis)
     Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(28.dp, Alignment.CenterHorizontally)) {
-        Pictogram(R.drawable.ic_paper, rs(R.string.welcome_paper), tint = FoldColors.KamiRose)
+        Pictogram(R.drawable.ic_paper, rs(R.string.welcome_paper), tint = FoldColors.CrossCoral)
         Pictogram(R.drawable.ic_table, rs(R.string.welcome_table), tint = PicoTheme.colorScheme.labelPrimary)
     }
     Spacer(modifier = Modifier.weight(1f))
@@ -102,22 +109,115 @@ private fun Pictogram(iconRes: Int, caption: String, tint: Color) {
     }
 }
 
+/** S07 (v0.1.1): the paper chip, six shelves as tabs, the shelf's models as two-column tiles (at most six). */
 @Composable
 private fun ColumnScope.Library(state: FoldUiState, onEvent: (FoldEvent) -> Unit) {
-    TitleRow(title = rs(R.string.library_title), trailing = { Key("gear", R.drawable.ic_gear, rs(R.string.action_settings)) { onEvent(FoldEvent.SettingsClicked) } })
-    val firstTime = state.progress.done.isEmpty()
-    for ((i, m) in FoldLibrary.all.withIndex()) {
-        val done = m.id in state.progress.done
-        val level = "●".repeat(m.level) + "○".repeat(3 - m.level)
-        RowButton(
-            name = "model_${m.id}",
-            text = modelName(m, state.language),
-            sub = (if (i == 0 && firstTime) rs(R.string.library_first) + " " else "") + rs(R.string.library_meta, m.steps.size, m.minutes),
-            trailing = (if (done) "✓  " else "") + level,
-            highlighted = i == 0 && firstTime,
-            onClick = { onEvent(FoldEvent.ModelPicked(i)) },
-            height = 48.dp,
-        )
+    val paper = state.settings.paper
+    TitleRow(
+        title = rs(R.string.library_title),
+        trailing = {
+            WordButton("paper_chip", rs(R.string.paper_chip, paperName(paper)), { onEvent(FoldEvent.PaperChipClicked) }, minWidth = 96.dp)
+            Key("gear", R.drawable.ic_gear, rs(R.string.action_settings)) { onEvent(FoldEvent.SettingsClicked) }
+        },
+    )
+    val shelves = FoldLibrary.categories(paper)
+    val category = if (state.category in shelves) state.category else shelves.first()
+    Segments(
+        items = shelves.map { "cat_${it.id}" to categoryName(it) },
+        selected = shelves.indexOf(category),
+        onSelect = { onEvent(FoldEvent.CategoryPicked(shelves[it])) },
+        itemWidth = (408 / shelves.size).dp,
+        itemHeight = 36.dp,
+        small = true,
+    )
+    val firstTime = state.progress.done.isEmpty() && state.progress.current == null
+    val models = FoldLibrary.shelf(category, paper)
+    for (row in models.chunked(2)) {
+        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            for (e in row) {
+                val m = FoldLibrary.model(e.id, paper) ?: continue
+                val done = e.id in state.progress.done
+                val level = "●".repeat(e.level) + "○".repeat(3 - e.level)
+                val start = firstTime && e.id == "basics"
+                TileButton(
+                    name = "model_${e.id}",
+                    title = entryName(e, state.language),
+                    meta = (if (start) rs(R.string.library_first) + " " else "") + rs(R.string.library_meta, m.steps.size, m.minutes),
+                    trailing = (if (done) "✓ " else "") + level,
+                    highlighted = start,
+                    onClick = { onEvent(FoldEvent.ModelPicked(e.id)) },
+                    modifier = Modifier.weight(1f),
+                )
+            }
+            if (row.size == 1) Spacer(modifier = Modifier.weight(1f))
+        }
+    }
+}
+
+@Composable
+private fun categoryName(c: Category): String =
+    rs(
+        when (c) {
+            Category.BASICS -> R.string.cat_basics
+            Category.ANIMALS -> R.string.cat_animals
+            Category.FLOWERS -> R.string.cat_flowers
+            Category.EVERYDAY -> R.string.cat_everyday
+            Category.BOXES -> R.string.cat_boxes
+            Category.PLANES -> R.string.cat_planes
+        }
+    )
+
+@Composable
+private fun paperName(p: Paper): String =
+    rs(
+        when (p) {
+            Paper.SQUARE -> R.string.paper_square
+            Paper.A4 -> R.string.paper_a4
+            Paper.LETTER -> R.string.paper_letter
+        }
+    )
+
+@Composable
+private fun paperSize(p: Paper): String =
+    rs(
+        when (p) {
+            Paper.SQUARE -> R.string.paper_square_size
+            Paper.A4 -> R.string.paper_a4_size
+            Paper.LETTER -> R.string.paper_letter_size
+        }
+    )
+
+/** S19 (v0.1.1): which paper do you have? The 15 cm square, A4 or Letter; printer paper models start by cutting a square. */
+@Composable
+private fun ColumnScope.PaperChoice(state: FoldUiState, onEvent: (FoldEvent) -> Unit) {
+    TitleRow(
+        title = rs(R.string.paper_title),
+        leading = if (state.settings.paperChosen) ({ Key("back", R.drawable.ic_back, rs(R.string.action_back)) { onEvent(FoldEvent.BackClicked) } }) else null,
+    )
+    Row(modifier = Modifier.fillMaxWidth().weight(1f), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        for (p in Paper.entries) {
+            val chosen = state.settings.paperChosen && state.settings.paper == p
+            PaperTile("paper_${p.id}", p, paperName(p), paperSize(p), chosen, { onEvent(FoldEvent.PaperPicked(p)) }, Modifier.weight(1f))
+        }
+    }
+    Text(text = rs(R.string.paper_body), color = PicoTheme.colorScheme.labelSecondary, style = FoldType.label, maxLines = 2, overflow = TextOverflow.Ellipsis)
+}
+
+@Composable
+private fun PaperTile(name: String, paper: Paper, title: String, sub: String, chosen: Boolean, onClick: () -> Unit, modifier: Modifier) {
+    val content = PicoTheme.colorScheme.labelPrimary
+    Button(
+        onClick = onClick,
+        modifier = modifier.fillMaxHeight().probe(name, onClick),
+        size = ButtonDefaults.Regular.copy(height = 150.dp, minWidth = 120.dp),
+        shape = RoundedCornerShape(20.dp),
+        colors = ButtonDefaults.buttonColors(containerColor = if (chosen) PicoTheme.colorScheme.interaction else PicoTheme.colorScheme.fillTertiary, contentColor = content),
+    ) {
+        Column(modifier = Modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(4.dp)) {
+            PoseDiagram(if (paper.rect) StartPose.RECT else StartPose.SQUARE, size = 60.dp, ratio = paper.heightMm / paper.widthMm, colour = !paper.rect)
+            Text(text = title, color = content, style = FoldType.title, maxLines = 1, overflow = TextOverflow.Ellipsis)
+            Text(text = sub, color = PicoTheme.colorScheme.labelSecondary, style = FoldType.label, maxLines = 1, overflow = TextOverflow.Ellipsis)
+        }
     }
 }
 
@@ -134,22 +234,28 @@ private fun ColumnScope.FindingDesk(onEvent: (FoldEvent) -> Unit) {
     LinearProgressIndicator({ sweep.value }, Modifier.fillMaxWidth())
     Text(text = rs(R.string.finding_body), color = PicoTheme.colorScheme.labelSecondary, style = FoldType.small, maxLines = 1)
     Spacer(modifier = Modifier.weight(1f))
-    Row(modifier = Modifier.fillMaxWidth()) { WordButton("cancel", rs(R.string.action_cancel), { onEvent(FoldEvent.CancelClicked) }) }
+    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        WordButton("in_front", rs(R.string.action_in_front), { onEvent(FoldEvent.PlaceInFrontClicked) }, minWidth = 140.dp)
+        WordButton("cancel", rs(R.string.action_cancel), { onEvent(FoldEvent.CancelClicked) })
+    }
 }
 
 @Composable
 private fun ColumnScope.PlaceDemo(state: FoldUiState, onEvent: (FoldEvent) -> Unit) {
     Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
-            PoseDiagram(diamond = state.model.pose == StartPose.DIAMOND, size = 64.dp)
-            Text(text = rs(R.string.pose_colour_down), color = PicoTheme.colorScheme.labelSecondary, style = FoldType.label, maxLines = 1)
+            PoseDiagram(state.model.pose, size = 64.dp, ratio = state.paper.heightMm / state.paper.widthMm)
+            Text(text = rs(if (state.paper.rect) R.string.pose_long_side_away else R.string.pose_colour_down), color = PicoTheme.colorScheme.labelSecondary, style = FoldType.label, maxLines = 1)
         }
         Text(text = rs(R.string.place_title), color = PicoTheme.colorScheme.labelPrimary, style = FoldType.big, maxLines = 3, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f))
     }
     Spacer(modifier = Modifier.weight(1f))
-    Text(text = rs(R.string.place_body), color = PicoTheme.colorScheme.labelSecondary, style = FoldType.small, maxLines = 2)
+    Text(text = rs(R.string.place_body, paperSize(state.paper)), color = PicoTheme.colorScheme.labelSecondary, style = FoldType.small, maxLines = 2)
     Spacer(modifier = Modifier.weight(1f))
-    Row(modifier = Modifier.fillMaxWidth()) { WordButton("cancel", rs(R.string.action_cancel), { onEvent(FoldEvent.CancelClicked) }) }
+    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        WordButton("in_front", rs(R.string.action_in_front), { onEvent(FoldEvent.PlaceInFrontClicked) }, minWidth = 140.dp)
+        WordButton("cancel", rs(R.string.action_cancel), { onEvent(FoldEvent.CancelClicked) })
+    }
 }
 
 /** S08 / S09 / S10: the step. */
@@ -182,7 +288,10 @@ private fun ColumnScope.StepContent(state: FoldUiState, onEvent: (FoldEvent) -> 
             Text(text = stepText(step, state.language), color = PicoTheme.colorScheme.labelPrimary, style = FoldType.step, maxLines = 2, overflow = TextOverflow.Ellipsis)
         }
         when {
+            state.step == 0 && model.prepSteps > 0 -> Text(text = rs(R.string.step_first_printer), color = PicoTheme.colorScheme.labelSecondary, style = FoldType.small, maxLines = 2, overflow = TextOverflow.Ellipsis)
+            state.step == 0 && model.entry.needsRect -> Text(text = rs(R.string.step_first_rect), color = PicoTheme.colorScheme.labelSecondary, style = FoldType.small, maxLines = 2, overflow = TextOverflow.Ellipsis)
             state.step == 0 -> Text(text = rs(if (model.pose == StartPose.DIAMOND) R.string.step_first_diamond else R.string.step_first_square), color = PicoTheme.colorScheme.labelSecondary, style = FoldType.small, maxLines = 2, overflow = TextOverflow.Ellipsis)
+            model.prepSteps > 0 && state.step == model.prepSteps -> Text(text = rs(R.string.step_after_prep), color = PicoTheme.colorScheme.labelSecondary, style = FoldType.small, maxLines = 2, overflow = TextOverflow.Ellipsis)
             step.kind == StepKind.FORM -> Text(text = rs(R.string.step_form_hint), color = PicoTheme.colorScheme.labelSecondary, style = FoldType.small, maxLines = 2, overflow = TextOverflow.Ellipsis)
             step.kind == StepKind.DRAW -> Text(text = rs(R.string.step_draw_hint), color = PicoTheme.colorScheme.labelSecondary, style = FoldType.small, maxLines = 1, overflow = TextOverflow.Ellipsis)
         }
@@ -200,7 +309,7 @@ private fun ColumnScope.StepContent(state: FoldUiState, onEvent: (FoldEvent) -> 
         }
         WordButton("prev", rs(R.string.action_back_step), { onEvent(FoldEvent.PrevClicked) }, enabled = state.step > 0, minWidth = 96.dp)
         Spacer(modifier = Modifier.weight(1f))
-        if (step.kind != StepKind.DRAW && step.kind != StepKind.FLIP) Key("replay", R.drawable.ic_replay, rs(R.string.action_replay)) { onEvent(FoldEvent.ReplayClicked) }
+        if (step.kind != StepKind.DRAW && step.kind != StepKind.FLIP && step.kind != StepKind.ROTATE) Key("replay", R.drawable.ic_replay, rs(R.string.action_replay)) { onEvent(FoldEvent.ReplayClicked) }
     }
 }
 
@@ -235,7 +344,7 @@ private fun ColumnScope.Done(state: FoldUiState, onEvent: (FoldEvent) -> Unit) {
 @Composable
 private fun ColumnScope.Resume(state: FoldUiState, onEvent: (FoldEvent) -> Unit) {
     val cur = state.resume
-    val model = FoldLibrary.byId(cur?.modelId) ?: state.model
+    val model = cur?.let { FoldLibrary.model(it.modelId, it.paper) } ?: state.model
     Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
         Key("back", R.drawable.ic_back, rs(R.string.action_back)) { onEvent(FoldEvent.BackClicked) }
         Text(text = rs(R.string.resume_title, modelName(model, state.language), (cur?.step ?: 0) + 1), color = PicoTheme.colorScheme.labelPrimary, style = FoldType.big, maxLines = 2, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f))
@@ -253,7 +362,8 @@ private fun ColumnScope.NoDesk(onEvent: (FoldEvent) -> Unit) {
     Text(text = rs(R.string.nodesk_body), color = PicoTheme.colorScheme.labelPrimary, style = FoldType.step, maxLines = 2)
     Spacer(modifier = Modifier.weight(1f))
     Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-        WordButton("rescan", rs(R.string.action_rescan), { onEvent(FoldEvent.RescanClicked) }, primary = true)
+        WordButton("in_front", rs(R.string.action_in_front), { onEvent(FoldEvent.PlaceInFrontClicked) }, primary = true, minWidth = 140.dp)
+        WordButton("rescan", rs(R.string.action_rescan), { onEvent(FoldEvent.RescanClicked) })
         WordButton("library", rs(R.string.action_library), { onEvent(FoldEvent.BackClicked) })
     }
 }

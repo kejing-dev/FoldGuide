@@ -7,8 +7,8 @@ import com.pico.spatial.ui.design.PicoTheme
 import com.pico.spatial.ui.design.systemColorScheme
 
 /**
- * The app theme: the 16-role colour scheme of the design (four fixed roles, twelve forwarded from the
- * system Vibrant scheme) and the Noto Sans type family. Text on glass uses `labelPrimary`.
+ * The app theme: all 16 colour roles fixed to the v0.1.1 pastel palette (the panels are cream cards,
+ * so ink labels replace the glass's white ones) and the Noto Sans type family.
  */
 @Composable
 fun FoldGuideTheme(content: @Composable () -> Unit) {
@@ -17,22 +17,22 @@ fun FoldGuideTheme(content: @Composable () -> Unit) {
     val colors =
         remember(system) {
             system.copy(
-                fillPrimary = system.fillPrimary,
-                fillSecondary = system.fillSecondary,
-                fillTertiary = system.fillTertiary,
-                fillLight = system.fillLight,
-                labelPrimaryLight = system.labelPrimaryLight,
-                labelPrimary = system.labelPrimary,
-                labelSecondary = system.labelSecondary,
-                labelTertiary = system.labelTertiary,
-                labelQuaternary = system.labelQuaternary,
-                lightenHover = system.lightenHover,
-                lightenPressed = system.lightenPressed,
-                error = FoldColors.Error,
-                alert = FoldColors.Alert,
-                passable = FoldColors.Passable,
-                interaction = FoldColors.Interaction,
-                dividerLine = system.dividerLine,
+                fillPrimary = FoldColors.Sand,
+                fillSecondary = FoldColors.SandSoft,
+                fillTertiary = FoldColors.Oat,
+                fillLight = FoldColors.Milk,
+                labelPrimaryLight = FoldColors.OnStrong,
+                labelPrimary = FoldColors.Ink,
+                labelSecondary = FoldColors.InkSecondary,
+                labelTertiary = FoldColors.InkTertiary,
+                labelQuaternary = FoldColors.InkQuaternary,
+                lightenHover = FoldColors.HoverWash,
+                lightenPressed = FoldColors.PressWash,
+                error = FoldColors.Coral,
+                alert = FoldColors.Honey,
+                passable = FoldColors.Mint,
+                interaction = FoldColors.MistBlue,
+                dividerLine = FoldColors.Divider,
             )
         }
     val family = rememberFoldFontFamily()
