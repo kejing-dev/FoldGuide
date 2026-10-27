@@ -2,18 +2,18 @@
 
 # Fold Guide | 折纸向导
 
-**桌上放一张和你的纸一样大的演示纸，它把每一步折给你看，你拿自己的纸跟着折一步；不识别你的纸，也不用对齐。**
+**桌上放一张和你的纸一样大的演示纸，它把每一步折给你看，你拿自己的纸跟着折一步。方形折纸、A4、Letter 打印纸都能用。**
 
-**A life-size demo sheet lies on your desk next to your own paper. It folds each step for you, and you fold your real paper along with it — no paper detection, no lining up.**
+**A life-size demo sheet lies on your desk next to your own paper. It folds each step for you, and you fold your real paper along with it. Works with origami squares and with A4 / Letter printer paper.**
 
-PICO OS 6 · PICO Spatial SDK 6.1.9 · Kotlin / SpatialUI · package `io.embodit.foldguide` · v0.1.0 (pre-release / 预发布)
+PICO OS 6 · PICO Spatial SDK 6.1.9 · Kotlin / SpatialUI · package `io.embodit.foldguide` · v0.1.1
 
-> **模拟器 QA 通过，真机未验证（Simulator-QA passed; not yet verified on a real headset）。**
+> **模拟器 QA 通过；用户已在 PICO 头显上试用并同意发布（Simulator-QA passed; tried on a PICO headset by the owner and approved for release）。**
 
-![封面：方盒第 3 步，演示纸上画出折线、要动的四个角和弧形箭头，后面立着步骤面板](docs/cover-S08-masu-box.jpg)
+![封面：A4 打印纸第 1 步，右下角往左上折到一半，步骤面板立在旁边](docs/cover-a4-puppy.jpg)
 
-> 截图和演示视频来自原生模拟器（PICO Emulator 6.1），由调试广播驱动跳转到各设计状态；**非真实手势录像**。
-> Screenshots and the demo video were taken on the native PICO emulator, driven by debug broadcasts that jump to each design state; **not a recording of real hand gestures.**
+> 截图来自原生模拟器（PICO Emulator 6.1），由调试广播驱动跳转到各状态；**非真实手势录像**。
+> Screenshots were taken on the native PICO emulator, driven by debug broadcasts that jump to each state; **not a recording of real hand gestures.**
 
 ---
 
@@ -21,47 +21,47 @@ PICO OS 6 · PICO Spatial SDK 6.1.9 · Kotlin / SpatialUI · package `io.embodit
 
 ### 这是什么
 
-拿一张 15 cm 的方形折纸坐到桌前。看着桌面捏一下，你的纸旁边就放下一张同样大小的演示纸，步骤面板立在它后面。每一步，演示纸上先画出折线（谷折虚线、山折点划线）、把要动的那一块染色、画一条弧形箭头指到落点，然后自己折 3 遍，停在折好的样子；你照着折自己的纸。可以低头、侧身绕着看，也可以捏住演示纸转过来；撑杯口、立盒墙这种立体步，演示纸会原地抬起来做。
+坐到桌前，选好手上的纸（15 cm 方形折纸、A4 或 Letter）。看着桌面捏一下，你的纸旁边就放下一张同样大小的演示纸，步骤面板立在旁边。每一步，演示纸上先画出折线（谷折虚线、山折点划线）、把要动的那一块染色、画一条弧形箭头指到落点，然后自己折 3 遍，停在折好的样子；你照着折自己的纸。可以低头看、捏住演示纸转过来；撑杯口、立盒墙这种立体步，演示纸会抬起来做。
 
-四个作品由易到难：基础折法（先学看图）、小狗脸（5 步）、纸杯（7 步）、方盒（9 步）。翻步可以点「下一步」，也可以打开「注视翻页」：演示折完一遍后看着「下一步」1 秒就翻，手里拿着纸也能翻。没折完的作品下次打开会问「接着折吗」。中英双语，全部本机保存，不联网。
+**v0.1.1（打磨版）**
+- **18 个作品，6 个分类**，难度 1–3 点：入门（基础折法、打印纸变正方形）· 动物（小狗脸、小猫脸、狐狸脸、知了、小鲸鱼）· 花草（郁金香、四瓣花）· 日常（爱心、小信封、小纸帽）· 盒子（纸杯、方盒、卡片钱包）· 飞机（小飞镖、尖头纸飞机、滑翔机）。
+- **打印纸**：纸帽、钱包、尖头纸飞机、滑翔机直接用 A4 / Letter 折；方形作品用打印纸时，前面自动多 4–5 步，教你把它折出、剪出一张正方形（再转成菱形）。演示纸按你的纸的真实大小显示。
+- **低饱和配色**：奶油色卡片面板、雾粉演示纸、雾蓝箭头、薄荷落点。
+- **不用走动、不卡扫描**：找不到桌子约 5 秒，演示纸就放到你面前的虚拟桌面上；任何时候都可以点「放在面前」。
+
+翻步可以点「下一步」，也可以打开「注视翻页」。没折完的作品下次打开会问「接着折吗」。中英双语，全部本机保存，不联网。
 
 ### 安装与启动
 
 ```bash
-adb install -r FoldGuide-v0.1.0.apk
+adb install -r FoldGuide-v0.1.1.apk
 pico-cli app launch io.embodit.foldguide
 ```
 
-APK 在 [Releases](https://github.com/kejing-dev/FoldGuide/releases) 页面下载（仓库不含 APK）。需要 PICO OS 6 头显或 PICO Emulator 6.1；用到桌面平面检测。APK 约 34 MB。
-
-### 容器与骨架
-
-- **容器**：只有 Full Space · `STAGE_MIXED`（透视），没有 Shared Space 版本。演示纸要贴在你真实的桌面上、和你的纸一样大，依赖平面检测，只在 Full Space 可用。
-- **骨架 D**（同空间尺 Spatial Ruler / 火情预案 Fire Plan）：平面检测找桌面、射线-平面求交放纸、懒跟随面板、面板池、每帧朝向 System。折纸几何（全折、翻面、压痕、动画分块）在纯 Kotlin 的 `FoldEngine`，有单元测试对照落点。
-- **状态**：设计包 14 个状态（S00–S18），全部可由调试广播直接跳转并截图，结构见 [AGENTS.md](AGENTS.md)。
+APK 在 [Releases](https://github.com/kejing-dev/FoldGuide/releases) 页面下载（仓库不含 APK）。需要 PICO OS 6 头显或 PICO Emulator 6.1。APK 约 34 MB。从 v0.1.0 升级时如果签名不同，先 `adb uninstall io.embodit.foldguide`。
 
 ### 截图
 
 | | |
 |---|---|
-| ![作品库：四个作品，带步数、时长、难度点](docs/S07-library.jpg) | ![基础折法第 2 步：山折折到一半，整块翻到背后](docs/S08-mountain-fold.jpg) |
-| 作品库 — 四个作品，第一次先学「基础折法」 | 山折 — 点划线，折到一半整块翻到背后 |
-| ![小狗脸第 5 步：三个白点画出眼睛和鼻子](docs/S08-puppy-dots.jpg) | ![方盒立体步：演示纸抬起来立盒墙](docs/S10-3d-form.jpg) |
-| 小狗脸 — 最后一步画三个点 | 立体步 — 演示纸抬到桌上 15 cm 立盒墙 |
-| ![方盒折好了：成品慢慢转](docs/S12-done.jpg) | ![注视翻页：看着下一步，外圈走一圈就翻](docs/dwell-ring.jpg) |
-| 折好了 — 成品慢转，「再折一个」 | 注视翻页 — 看着「下一步」，外圈 1 秒走满就翻 |
+| ![选纸：正方形、A4、Letter](docs/paper-choice.jpg) | ![图库：动物分类，五个作品带步数和难度](docs/library-zh.jpg) |
+| 先选纸：正方形 / A4 / Letter | 图库：6 个分类，每个作品带步数、时长、难度 |
+| ![A4 剪掉多出来的纸条](docs/a4-cut-strip.jpg) | ![正方形转成菱形后的第一步](docs/a4-square-to-diamond.jpg) |
+| A4 变正方形：沿折痕剪掉纸条 | 转成菱形，开始折小狗脸 |
+| ![知了折好了](docs/cicada-done.jpg) | ![爱心折好了](docs/heart-done.jpg) |
+| 知了 | 爱心 |
+| ![A4 尖头纸飞机折好了](docs/dart-done.jpg) | ![Letter 纸帽：往上折纸条](docs/letter-hat.jpg) |
+| 尖头纸飞机（A4） | 小纸帽（Letter） |
 
-启动器图标：
+### 容器与结构
 
-<img src="docs/launcher.jpg" width="420" alt="系统「回到主页」框里的应用图标">
+- **容器**：Full Space · `STAGE_MIXED`（透视）。演示纸要贴在真实桌面上、和你的纸一样大，用到平面检测；找不到桌面时放到虚拟桌面上。
+- **折纸数据**：在 `tools/foldlib/`（Python）里写，每一步都检查（落点误差 ≤ 0.5 mm、范围、文案长度）并逐步出图，再生成 `FoldLibraryData.kt`；Kotlin 的 `FoldEngine` 用同一套规则，单元测试覆盖每个作品在每种纸上的每一步。
+- 结构、调试广播、截图清单见 [AGENTS.md](AGENTS.md)。
 
-### 已知问题（QA 第 2 轮，不影响使用）
+### 还没验到
 
-- 坐着看时，纸杯第 7 步、方盒第 7–9 步和「折好了」抬起的立体纸会挡住面板的「下一步」「再折一个」；捏那个位置仍然能按到，只是看不见按钮。
-- 用调试命令直接跳到「清空记录」确认框时框画成黑色；从设置里正常点进来是好的，用户碰不到。
-- 演示纸会画在系统「回到主页」框前面，框里的按钮还能按。
-
-还没在头显上验过：真眼睛看着「下一步」翻页的手感（现在用的是头的朝向）、手柄摇杆转演示纸、手里拿着纸时会不会误捏误翻、透视里折线清不清楚、真实空间权限流程。
+真实桌面上（非虚拟桌面）的遮挡、真眼睛的注视翻页手感、手里拿纸时会不会误捏、新作品在真纸上的折法细节。
 
 ---
 
@@ -69,36 +69,38 @@ APK 在 [Releases](https://github.com/kejing-dev/FoldGuide/releases) 页面下�
 
 ### What it is
 
-Sit at a desk with a 15 cm square of origami paper. Look at the desk and pinch: a demo sheet of the same size lands next to your paper, with the step panel standing behind it. For every step the demo sheet draws the fold line (valley dashes, mountain dash-dots), tints the flap that moves, arches an arrow to where it lands, then folds itself three times and stops folded; you fold your own paper the same way. Lean in or walk around to look, or pinch the sheet and turn it; for 3D steps (opening the cup, raising the box walls) the sheet lifts up off the desk.
+Sit at a desk and pick the paper you have (a 15 cm origami square, A4 or Letter). Look at the desk and pinch: a demo sheet of the same size lands next to your paper, with the step panel beside it. For every step the demo sheet draws the fold line (valley dashes, mountain dash-dots), tints the flap that moves, arches an arrow to where it lands, then folds itself three times and stops folded; you fold your own paper the same way. 3D steps (opening the cup, raising the box walls) lift off the desk.
 
-Four models, easiest first: Folding Basics (reading the symbols), Puppy Face (5 steps), Paper Cup (7), Masu Box (9). Turn steps with Next, or switch on gaze paging: once the demo has played, look at Next for one second — it works with paper in both hands. An unfinished model offers "Continue?" next time. Chinese and English; everything is stored on the device, no network.
+**v0.1.1 (polish)**
+- **18 models on six shelves**, difficulty 1–3: Basics (Folding Basics, Square from Printer Paper) · Animals (Puppy, Kitten, Fox, Cicada, Little Whale) · Flowers (Tulip, Four-Petal Flower) · Everyday (Heart, Little Envelope, Paper Hat) · Boxes (Paper Cup, Masu Box, Card Wallet) · Planes (Paper Arrow, Dart Plane, Glider).
+- **Printer paper**: the hat, wallet, dart and glider fold straight from A4 / Letter; square models on printer paper start with 4–5 extra steps that turn the sheet into a square (and then a diamond). The demo sheet is drawn at your paper's real size.
+- **Low-saturation palette**: cream card panels, mist-pink demo sheet, mist-blue arrows, mint landings.
+- **No walking, no scanning stall**: with no desk found in about 5 s, the demo sheet goes on a virtual desk in front of you; "Put it in front" works at any time.
+
+Turn steps with Next or with gaze paging. An unfinished model offers "Continue?" next time. Chinese and English; everything stays on the device, no network.
 
 ### Install and launch
 
 ```bash
-adb install -r FoldGuide-v0.1.0.apk
+adb install -r FoldGuide-v0.1.1.apk
 pico-cli app launch io.embodit.foldguide
 ```
 
-Download the APK from the [Releases](https://github.com/kejing-dev/FoldGuide/releases) page (the repository itself does not ship an APK). Needs a PICO OS 6 headset or PICO Emulator 6.1; uses table plane detection. The APK is about 34 MB.
+Download the APK from the [Releases](https://github.com/kejing-dev/FoldGuide/releases) page (the repository does not ship an APK). Needs a PICO OS 6 headset or PICO Emulator 6.1; about 34 MB. If an older build was signed with a different key, run `adb uninstall io.embodit.foldguide` first.
 
-### Container and skeleton
+### Container and structure
 
-- **Container**: Full Space only, `STAGE_MIXED` (passthrough); no Shared Space version. The demo sheet must lie on your real desk at real size, which needs plane detection — Full Space only.
-- **Skeleton D** (same as Spatial Ruler / Fire Plan): plane detection for the desk, ray-plane hit to place the sheet, lazy-follow panel, panel pool, per-frame billboarding system. Fold geometry (fold-all, flip, crease, animation parts) lives in a pure Kotlin `FoldEngine` with unit tests on landing points.
-- **States**: 14 designed states (S00–S18), each reachable by a debug broadcast and captured; see [AGENTS.md](AGENTS.md).
+- **Container**: Full Space, `STAGE_MIXED` (passthrough), with desk plane detection and a virtual desk fallback.
+- **Fold data** is authored in `tools/foldlib/` (Python: checks every step — landings within 0.5 mm, bounds, copy length — and renders each step), then generated into `FoldLibraryData.kt`. The Kotlin `FoldEngine` follows the same rules; unit tests cover every model on every paper.
+- Structure, debug broadcasts and the screenshot list: [AGENTS.md](AGENTS.md).
 
 ### Screenshots
 
-See the table above: model library, mountain fold, puppy face dots, 3D step, finished box, gaze paging ring.
+See the table above: paper choice, the library, cutting a square from A4, turning it into a diamond, cicada, heart, dart (A4), paper hat (Letter).
 
-### Known issues (QA round 2, none blocking)
+### Not yet verified
 
-- Seated, the lifted 3D sheet (Paper Cup step 7, Masu Box steps 7–9 and "Done") hides the panel's Next / Fold another buttons; pinching there still presses them, you just cannot see them.
-- Jumping straight to the "Clear history" confirmation by debug command draws it black; reached normally from Settings it is fine.
-- The demo sheet draws in front of the system "Back to Home" dialog; its buttons still work.
-
-Not yet verified on a headset: gaze paging with real eyes (it currently uses head direction), thumbstick turning of the demo sheet, accidental pinches or page turns while holding paper, fold-line legibility in passthrough, and the real spatial permission flow.
+Occlusion on a real (non-virtual) desk, gaze paging with real eyes, accidental pinches while holding paper, and the finer folding details of the new models on real paper.
 
 ---
 

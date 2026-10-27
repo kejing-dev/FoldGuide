@@ -49,6 +49,12 @@ User, verbatim: "颜色现在有点丑，可以用低饱和色吗，清新可爱
 - **Headset install**: v0.1.0 on the headset was signed by kj-home-pc's debug key; `install -r` from pc1 fails with
   INSTALL_FAILED_UPDATE_INCOMPATIBLE, so it was uninstalled first (its progress was lost).
 
+- **UI audit** (`../spatial-app-factory/apps/fold-guide/build/ui-audit.md`): form models lift 0.15 m / scale (A4 lifted
+  them to 0.21 m, over the panel's buttons); the virtual desk top hangs under its own `deskRoot` (it span with the done
+  spin); lazy follow window 45 -> 28 degrees (after a 90 / 180 degree turn the panel stopped half out of view); the
+  library and the paper choice follow the head even when a sheet is down; picking a model with the sheet on the virtual
+  desk re-places it ahead.
+
 Debug hooks added: `paper <square|a4|letter>`, `category <shelf>`, `virtual`, `state S19`; controls `paper_chip`,
 `paper_<id>`, `cat_<shelf>`, `in_front`, `model_<id>`. v0.1.1 screenshots: `../spatial-app-factory/apps/fold-guide/build/
 v011-contact.png` (cut, turn, A4 dog, cicada / dart / heart done, Letter hat, glider) and `v011-contact-2.png` (S01, S19,

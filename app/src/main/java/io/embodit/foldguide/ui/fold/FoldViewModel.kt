@@ -266,6 +266,8 @@ class FoldViewModel(private val appContext: Context) : ViewModel() {
         val m = FoldLibrary.model(id, paper) ?: return
         FoldLog.i("PICK ${m.key} steps=${m.steps.size} prep=${m.prepSteps}")
         update { copy(modelId = m.id, paper = paper, step = 0, settingsOpen = false, menuOpen = false) }
+        // a sheet on the virtual desk top moves to the user's current heading (they may have turned since: D9)
+        if (s.demo?.virtual == true) _effects.tryEmit(FoldUiEffect.PlaceVirtual)
         if (s.demo != null) enterStep(0)
         else {
             placingFromStep = false

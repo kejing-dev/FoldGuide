@@ -104,6 +104,9 @@ class FoldScene(private val sink: (FoldEvent) -> Unit) : FoldProbe.SceneProbe {
     private var guides: GuideViews? = null
     private var form: FormView? = null
     private var virtualDesk: VirtualDeskView? = null
+
+    /** Holds the virtual desk top: at the demo's centre and yaw, scaled like the sheet, but never turned or spun with it. */
+    private var deskRoot: Entity? = null
     private var attached = false
 
     private val follower = Follower("guide", GUIDE_OFFSET, GUIDE_HALF_EXTENTS, GUIDE_LEAN)
@@ -240,7 +243,10 @@ class FoldScene(private val sink: (FoldEvent) -> Unit) : FoldProbe.SceneProbe {
         pr.addChild(tap)
         tap.tapBox(Vec3(PAPER_TAP_M, 0.02f, PAPER_TAP_M), Vec3(0f, 0.01f, 0f))
         paperTap = tap
-        virtualDesk = VirtualDeskView(pr, m)
+        val dr = Entity().named("deskRoot")
+        root.addChild(dr)
+        deskRoot = dr
+        virtualDesk = VirtualDeskView(dr, m)
         paper = PaperView(lift, m)
         guides = GuideViews(lift, m)
         form = FormView(lift, m)
@@ -283,6 +289,7 @@ class FoldScene(private val sink: (FoldEvent) -> Unit) : FoldProbe.SceneProbe {
         reticle?.destroy()
         colliders?.clear()
         runCatching { paperRoot?.destroy(true) }
+        runCatching { deskRoot?.destroy(true) }
         runCatching { stageRoot?.destroy(true) }
         runCatching { contentProbe?.destroy(true) }
         shared?.close()
@@ -301,6 +308,7 @@ class FoldScene(private val sink: (FoldEvent) -> Unit) : FoldProbe.SceneProbe {
         guides = null
         form = null
         virtualDesk = null
+        deskRoot = null
         hasHead = false
         lastPlaneCount = -1
         lastDeskCount = -1
@@ -354,6 +362,7 @@ class FoldScene(private val sink: (FoldEvent) -> Unit) : FoldProbe.SceneProbe {
         if (demo != null) {
             val k = state.model.scale
             paperRoot?.setLocal(position = demo.center, rotation = Quat4.axisAngle(Vec3.UP, demo.yaw + spin + doneSpin), scale = Vec3(k, k, k))
+            deskRoot?.setLocal(position = demo.center, rotation = Quat4.axisAngle(Vec3.UP, demo.yaw), scale = Vec3(k, k, k))
         }
         virtualDesk?.show("${state.model.outline.hashCode()}", state.model.outline, showPaper && demo?.virtual == true)
         val key =
@@ -398,7 +407,7 @@ class FoldScene(private val sink: (FoldEvent) -> Unit) : FoldProbe.SceneProbe {
                         if (last.kind == StepKind.FORM && last.form != null) {
                             paper.clear()
                             guides.clear()
-                            formLift = FORM_LIFT_M
+                            formLift = FORM_LIFT_M / (model.scale * model.scale)
                             form.build(last.form, now, finalOnly = true)
                         } else {
                             form.clear()
@@ -414,7 +423,7 @@ class FoldScene(private val sink: (FoldEvent) -> Unit) : FoldProbe.SceneProbe {
                             StepKind.FORM -> {
                                 paper.clear()
                                 guides.clear()
-                                formLift = FORM_LIFT_M
+                                formLift = FORM_LIFT_M / (model.scale * model.scale)
                                 form.build(step.form!!, now, finalOnly = false)
                             }
                             StepKind.FOLD, StepKind.CREASE -> {
@@ -608,7 +617,8 @@ class FoldScene(private val sink: (FoldEvent) -> Unit) : FoldProbe.SceneProbe {
     /** The guide panel (lazy follow / planted on the desk / beside the demo) and the popups above it. */
     private fun placePanels(state: FoldUiState, rig: PanelRig) {
         if (!hasHead) return
-        val onDesk = state.demo != null && state.mode != Mode.FINDING_DESK && state.mode != Mode.NO_DESK && state.mode != Mode.NO_PERMISSION && state.mode != Mode.LOADING && state.mode != Mode.WELCOME
+        // the library and the paper choice are not about the sheet: they follow the head even when a sheet is down (UI audit v0.1.1)
+        val onDesk = state.demo != null && state.mode != Mode.FINDING_DESK && state.mode != Mode.NO_DESK && state.mode != Mode.NO_PERMISSION && state.mode != Mode.LOADING && state.mode != Mode.WELCOME && state.mode != Mode.LIBRARY && state.mode != Mode.PAPER
         val pose =
             when {
                 onDesk && deskPanelPose != null -> deskPanelPose!!
@@ -985,6 +995,7 @@ class FoldScene(private val sink: (FoldEvent) -> Unit) : FoldProbe.SceneProbe {
         private const val CONTROLLER_DEBOUNCE_MS = 800L
         private const val RETICLE_RANGE_M = 3f
         private const val PAPER_TAP_M = 0.24f
+        /** Form steps lift the hinge model this far (metres on the square; 0.15 m / scale on printer paper, in the scaled paper root, so the bigger model stays below the guide panel). */
         private const val FORM_LIFT_M = 0.15f
         private const val GUIDE_FADE = 0.35f
         private const val DONE_TURN_S = 6f

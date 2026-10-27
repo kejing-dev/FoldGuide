@@ -19,7 +19,7 @@ data class FollowPose(val position: Vec3, val yaw: Float) {
 
 /**
  * Lazy follow (Spatial Ruler rule T11, taken over for the main panel and the extinguisher prop): the
- * thing rests where it settled; once its centre has been more than 45 degrees off the view direction,
+ * thing rests where it settled; once its centre has been more than 28 degrees off the view direction,
  * or nearer than [nearM] or farther than [farM], for 0.5 s without a break, it slides to the designed
  * pose of that moment in 0.35 s (ease-in-out, time based). It holds still while [hold]. The designed
  * pose is [headOffset] in the head frame (x right, y up, -z ahead), level, turned to the head's heading.
@@ -175,7 +175,8 @@ internal class Follower(
 
     companion object {
         private const val NEVER = Long.MIN_VALUE
-        private const val WINDOW_DEG = 45f
+        /** 28 degrees (v0.1.1 UI audit; was 45): the 0.26 m panel at 0.6 m stays wholly in view before it slides back. */
+        private const val WINDOW_DEG = 28f
         private const val OUT_MS = 500L
         private const val SLIDE_MS = 350f
         private const val DEAD_BAND_M = 0.01f
