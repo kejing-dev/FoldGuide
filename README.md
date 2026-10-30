@@ -4,6 +4,6 @@
 
 | 会话 | 标题 | 行数 |
 |---|---|---|
-| `97b7d7cc` | [fold-guide] design · 折纸向导 | 1451 |
 | `babc52e3` | [fold-guide] build · 折纸向导 配色 + 图库 + 打印纸 | 1551 |
 | `b5ce63a9` | [fold-guide] 补发飞书 + Vibe Lab 素材 | 631 |
+| `97b7d7cc` | [fold-guide] design · 折纸向导 | 1451 |
